@@ -21,38 +21,23 @@
 
 #import <Foundation/Foundation.h>
 
-/**
- *  Insert an object or NSNull into a collection
- *
- *  @param dict   a mutable dictionary
- *  @param object an object or nil
- */
-void BSGDictSetSafeObject(NSMutableDictionary *dict, id object, id<NSCopying> key);
+NS_ASSUME_NONNULL_BEGIN
 
-/**
- *  Insert an object or NSNull into a collection
- *
- *  @param array  a mutable array
- *  @param object an object or nil
- */
-void BSGArrayAddSafeObject(NSMutableArray *array, id object);
+// MARK: NSArray
 
-/**
- *  Insert an object into a collection only if not nil
- *
- *  @param dict   a mutable dictionary
- *  @param object an object or nil
- *  @param key    the key of the object
- */
-void BSGDictInsertIfNotNil(NSMutableDictionary *dict, id object, id<NSCopying> key);
+/// Returns an array with the object, or an empty array if object is nil.
+NSArray * BSGArrayWithObject(id _Nullable object);
 
-/**
- *  Insert an object into a collection only if not nil
- *
- *  @param array  a mutable array
- *  @param object an object or nil
- */
-void BSGArrayInsertIfNotNil(NSMutableArray *array, id object);
+void BSGArrayAddIfNonnull(NSMutableArray *array, id _Nullable object);
+
+/// Returns an array containing the results of mapping the given block over the array's elements
+NSArray * BSGArrayMap(NSArray * _Nullable array, id _Nullable (^ transform)(id value));
+
+/// Returns a new array containing the elements starting at position `index`, or
+/// an empty array if `index` is beyond the array's range range of elements.
+NSArray * BSGArraySubarrayFromIndex(NSArray *array, NSUInteger index);
+
+// MARK: - NSDictionary
 
 /**
  *  Merge values from source dictionary with destination
@@ -61,3 +46,26 @@ void BSGArrayInsertIfNotNil(NSMutableArray *array, id object);
  *  @param destination a dictionary or nil
  */
 NSDictionary *BSGDictMerge(NSDictionary *source, NSDictionary *destination);
+
+/// Returns a representation of the dictionary that contains only valid JSON.
+/// Any dictionary keys that are not strings will be ignored.
+/// Any values that are not valid JSON will be replaced by a string description.
+NSDictionary * BSGJSONDictionary(NSDictionary *dictionary);
+
+// MARK: - NSSet
+
+void BSGSetAddIfNonnull(NSMutableSet *array, id _Nullable object);
+
+// MARK: - Deserialization
+
+NSDictionary * _Nullable BSGDeserializeDict(id _Nullable rawValue);
+
+id _Nullable BSGDeserializeObject(id _Nullable rawValue, id _Nullable (^ deserializer)(NSDictionary * _Nonnull dict));
+
+id _Nullable BSGDeserializeArrayOfObjects(id _Nullable rawValue, id _Nullable (^ deserializer)(NSDictionary * _Nonnull dict));
+
+NSString * _Nullable BSGDeserializeString(id _Nullable rawValue);
+
+NSDate * _Nullable BSGDeserializeDate(id _Nullable rawValue);
+
+NS_ASSUME_NONNULL_END

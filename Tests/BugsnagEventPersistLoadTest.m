@@ -7,34 +7,20 @@
 //
 
 #import <XCTest/XCTest.h>
-#import "BugsnagEvent.h"
+
+#import "BugsnagEvent+Private.h"
 #import "BugsnagAppWithState.h"
 #import "BugsnagUser.h"
-#import "BugsnagDeviceWithState.h"
+#import "BugsnagDeviceWithState+Private.h"
 #import "BugsnagError.h"
 #import "BugsnagStackframe.h"
 #import "BugsnagBreadcrumb.h"
 #import "BugsnagHandledState.h"
 #import "Bugsnag.h"
-
 #import "BugsnagError.h"
+#import "BugsnagSession+Private.h"
 #import "BugsnagStackframe.h"
 #import "BugsnagThread.h"
-
-@interface BugsnagEvent ()
-- (instancetype)initWithKSReport:(NSDictionary *)report;
-@property(readonly, nonnull) BugsnagHandledState *handledState;
-@property BugsnagSession *session;
-@end
-
-@interface BugsnagDeviceWithState ()
-@property (nonatomic, readonly) NSDateFormatter *formatter;
-@end
-
-@interface BugsnagSession ()
-@property NSUInteger unhandledCount;
-@property NSUInteger handledCount;
-@end
 
 @interface BugsnagEventPersistLoadTest : XCTestCase
 @property NSDictionary *eventData;
@@ -362,6 +348,16 @@
     XCTAssertEqualObjects(@"123", event.session.id);
     XCTAssertEqual(1, event.session.unhandledCount);
     XCTAssertEqual(2, event.session.handledCount);
+}
+
+- (void)testReactNativePromiseRejection {
+    NSURL *url = [[NSBundle bundleForClass:[self class]] URLForResource:@"report-react-native-promise-rejection" withExtension:@"json"];
+    NSDictionary *userData = [NSJSONSerialization JSONObjectWithData:[NSData dataWithContentsOfURL:url] options:0 error:nil];
+    XCTAssertEqualObjects([userData valueForKeyPath:@"user.event.exceptions.@count"], @(2));
+    BugsnagEvent *event = [[BugsnagEvent alloc] initWithKSReport:userData];
+    XCTAssertEqual(event.errors.count, 2);
+    XCTAssertEqualObjects([[event toJsonWithRedactedKeys:nil] valueForKeyPath:@"exceptions.@count"], @(2),
+                          @"JSON representation of event should have the same number of errors / exceptions");
 }
 
 @end

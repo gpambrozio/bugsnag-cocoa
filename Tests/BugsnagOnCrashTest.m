@@ -9,10 +9,7 @@
 #import <XCTest/XCTest.h>
 
 #import <Bugsnag/Bugsnag.h>
-
-@interface BugsnagEvent ()
-- (instancetype)initWithKSReport:(NSDictionary *)report;
-@end
+#import "BugsnagEvent+Private.h"
 
 @interface BugsnagOnCrashTest : XCTestCase
 
@@ -43,7 +40,7 @@
  * Verifies that fields stored in same section under different keys are
  * _not_ added to the metadata
  */
-- (void)testBlacklistedFields {
+- (void)testDisallowedUserKeys {
     BugsnagEvent *event = [[BugsnagEvent alloc] initWithKSReport:@{
             @"user": @{
                     @"foo": @"some value here",

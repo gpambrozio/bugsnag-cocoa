@@ -25,25 +25,26 @@
 #ifndef HDR_BSG_KSCrashType_h
 #define HDR_BSG_KSCrashType_h
 
+#include <CoreFoundation/CoreFoundation.h>
+
 /** Different ways an application can crash:
  * - Mach kernel exception
  * - Fatal signal
  * - Uncaught C++ exception
  * - Uncaught Objective-C NSException
- * - User reported custom exception
  */
-typedef enum {
+
+
+typedef CF_ENUM(unsigned, BSG_KSCrashType) {
     BSG_KSCrashTypeMachException = 0x01,
     BSG_KSCrashTypeSignal = 0x02,
     BSG_KSCrashTypeCPPException = 0x04,
     BSG_KSCrashTypeNSException = 0x08,
-    BSG_KSCrashTypeUserReported = 0x20,
-} BSG_KSCrashType;
+};
 
 #define BSG_KSCrashTypeAll                                                     \
     (BSG_KSCrashTypeMachException | BSG_KSCrashTypeSignal |                    \
-     BSG_KSCrashTypeCPPException | BSG_KSCrashTypeNSException |                \
-     BSG_KSCrashTypeUserReported)
+     BSG_KSCrashTypeCPPException | BSG_KSCrashTypeNSException)
 
 #define BSG_KSCrashTypeDebuggerUnsafe                                          \
     (BSG_KSCrashTypeMachException | BSG_KSCrashTypeNSException)

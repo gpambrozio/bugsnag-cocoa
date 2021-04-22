@@ -27,7 +27,6 @@
 #include "BSG_KSCrashC.h"
 
 #include "BSG_KSCrashReport.h"
-#include "BSG_KSCrashSentry_User.h"
 #include "BSG_KSMach.h"
 #include "BSG_KSMachHeaders.h"
 #include "BSG_KSObjC.h"
@@ -73,7 +72,7 @@ BSG_KSCrash_Context *crashContext(void) {
 void bsg_kscrash_i_onCrash(BSG_KSCrash_Context *context) {
     BSG_KSLOG_DEBUG("Updating application state to note crash.");
 
-    bsg_kscrashstate_notifyAppCrash(context->crash.crashType);
+    bsg_kscrashstate_notifyAppCrash();
 
     if (context->config.printTraceToStdout) {
         bsg_kscrashreport_logCrash(context);
@@ -150,7 +149,9 @@ void bsg_kscrash_reinstall(const char *const crashReportFilePath,
     if (!bsg_kscrashstate_init(bsg_g_stateFilePath, &context->state)) {
         BSG_KSLOG_ERROR("Failed to initialize persistent crash state");
     }
-    context->state.appLaunchTime = mach_absolute_time();
+    uint64_t timeNow = mach_absolute_time();
+    context->state.appLaunchTime = timeNow;
+    context->state.lastUpdateDurationsTime = timeNow;
 }
 
 BSG_KSCrashType bsg_kscrash_setHandlingCrashTypes(BSG_KSCrashType crashTypes) {
@@ -186,27 +187,6 @@ void bsg_kscrash_setCrashNotifyCallback(
     crashContext()->config.onCrashNotify = onCrashNotify;
 }
 
-void bsg_kscrash_reportUserException(const char *name, const char *reason,
-        const char *severity,
-        const char *handledState,
-        const char *overrides,
-        const char *eventOverrides,
-        const char *metadata,
-        const char *appState,
-        const char *config) {
-    bsg_kscrashsentry_reportUserException(name, reason,
-            severity,
-            handledState, overrides,
-            eventOverrides,
-            metadata, appState, config);
-}
-
-void bsg_kscrash_setWriteBinaryImagesForUserReported(
-    bool writeBinaryImagesForUserReported) {
-    crashContext()->crash.writeBinaryImagesForUserReported =
-        writeBinaryImagesForUserReported;
-}
-
 void bsg_kscrash_setReportWhenDebuggerIsAttached(
     bool reportWhenDebuggerIsAttached) {
     crashContext()->crash.reportWhenDebuggerIsAttached =
@@ -215,36 +195,4 @@ void bsg_kscrash_setReportWhenDebuggerIsAttached(
 
 void bsg_kscrash_setThreadTracingEnabled(bool threadTracingEnabled) {
     crashContext()->crash.threadTracingEnabled = threadTracingEnabled;
-}
-
-char *bsg_kscrash_captureThreadTrace(int discardDepth, int frameCount, uintptr_t *callstack, const bool recordAllThreads) {
-    BSG_KSCrash_Context *globalContext = crashContext();
-    BSG_KSCrash_Context localContext = {};
-    BSG_KSCrash_Context *context = &localContext;
-    memcpy(context, globalContext, sizeof(BSG_KSCrash_Context));
-
-    // populate context with pre-recorded stacktrace/thread info
-    // for KSCrash to serialize
-    context->crash.stackTrace = callstack;
-    context->crash.stackTraceLength = frameCount;
-    context->crash.userException.discardDepth = discardDepth;
-    context->crash.offendingThread = bsg_ksmachthread_self();
-    context->crash.crashType = BSG_KSCrashTypeUserReported;
-    context->crash.threadTracingEnabled = recordAllThreads;
-
-    // No need to gather notable addresses for handled errors
-    context->config.introspectionRules.enabled = false;
-    
-    // Only suspend threads if tracing is set to always
-    // (to ensure trace is captured at the same point in time)
-    if (context->crash.threadTracingEnabled) {
-        bsg_kscrashsentry_suspend_threads_user();
-    }
-
-    char *trace = bsg_kscrw_i_captureThreadTrace(context);
-    
-    if (context->crash.threadTracingEnabled) {
-        bsg_kscrashsentry_resume_threads_user(false);
-    }
-    return trace;
 }

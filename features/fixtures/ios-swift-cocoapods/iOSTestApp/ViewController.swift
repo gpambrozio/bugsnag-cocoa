@@ -14,7 +14,7 @@ class ViewController: UIViewController {
     @IBOutlet var scenarioNameField : UITextField!
     @IBOutlet var scenarioMetaDataField : UITextField!
     @IBOutlet var apiKeyField: UITextField!
-    
+
     var scenario : Scenario?
 
     override func viewDidLoad() {
@@ -26,7 +26,7 @@ class ViewController: UIViewController {
 
     @IBAction func runTestScenario() {
         scenario = prepareScenario()
-        
+
         NSLog("Starting Bugsnag for scenario: %@", String(describing: scenario))
         scenario?.startBugsnag()
         NSLog("Running scenario: %@", String(describing: scenario))
@@ -38,12 +38,26 @@ class ViewController: UIViewController {
         NSLog("Starting Bugsnag for scenario: %@", String(describing: scenario))
         scenario?.startBugsnag()
     }
-    
-    @IBAction func clearUserData(_ sender: Any) {
-        NSLog("Clear user defaults")
+
+    @IBAction func clearPersistentData(_ sender: Any) {
+        NSLog("Clear persistent data")
         UserDefaults.standard.removePersistentDomain(forName: Bundle.main.bundleIdentifier!)
+        do { // Delete Bugsnag persistent data to prevent sending of OOMS, old crash reports, or old sessions
+            let cachesDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+            try FileManager.default.contentsOfDirectory(at: cachesDirectory, includingPropertiesForKeys: []).forEach {
+                do {
+                    try FileManager.default.removeItem(at: $0)
+                } catch {
+                    NSLog("%@", String(describing: error))
+                }
+            }
+            let rootDirectory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("com.bugsnag.Bugsnag")
+            try FileManager.default.removeItem(at: rootDirectory)
+        } catch {
+            NSLog("%@", String(describing: error))
+        }
     }
-    
+
     internal func prepareScenario() -> Scenario {
         let eventType : String! = scenarioNameField.text
         let eventMode : String! = scenarioMetaDataField.text
@@ -59,19 +73,19 @@ class ViewController: UIViewController {
         else {
             // Automation mode
             config = BugsnagConfiguration("12312312312312312312312312312312")
-            config.endpoints = BugsnagEndpointConfiguration(notify: "http://bs-local.com:9339", sessions: "http://bs-local.com:9339")
+            config.endpoints = BugsnagEndpointConfiguration(notify: "http://bs-local.com:9339/notify", sessions: "http://bs-local.com:9339/sessions")
         }
-        
+
         let allowedErrorTypes = BugsnagErrorTypes()
         allowedErrorTypes.ooms = false
         config.enabledErrorTypes = allowedErrorTypes
-        
+
         let scenario = Scenario.createScenarioNamed(eventType, withConfig: config)
         scenario.eventMode = eventMode
         return scenario
     }
-    
-    
+
+
     @objc func didEnterBackgroundNotification() {
         scenario?.didEnterBackgroundNotification()
     }

@@ -6,39 +6,19 @@
 //  Copyright © 2020 Bugsnag. All rights reserved.
 //
 
-#import "Bugsnag.h"
+#import "Bugsnag+Private.h"
+#import "BugsnagBreadcrumb+Private.h"
 #import "BugsnagBreadcrumbs.h"
-#import "BugsnagClient.h"
-#import "BugsnagClientInternal.h"
+#import "BugsnagClient+Private.h"
+#import "BugsnagConfiguration+Private.h"
 #import "BugsnagTestConstants.h"
 #import "BugsnagKeys.h"
 #import "BugsnagUser.h"
+
+#import <objc/runtime.h>
 #import <XCTest/XCTest.h>
 
 @interface BugsnagClientTests : XCTestCase
-@end
-
-@interface Bugsnag ()
-+ (BugsnagConfiguration *)configuration;
-+ (BugsnagClient *)client;
-@end
-
-@interface BugsnagClient ()
-- (void)orientationChanged:(NSNotification *)notif;
-@property (nonatomic, strong) BugsnagMetadata *metadata;
-@property(nonatomic, strong) BugsnagBreadcrumbs *breadcrumbs;
-@end
-
-@interface BugsnagBreadcrumb ()
-- (NSDictionary *)objectValue;
-@end
-
-@interface BugsnagBreadcrumbs ()
-@property(nonatomic, readwrite, strong) NSMutableArray *breadcrumbs;
-@end
-
-@interface BugsnagConfiguration ()
-@property(readwrite, retain, nullable) BugsnagMetadata *metadata;
 @end
 
 NSString *BSGFormatSeverity(BSGSeverity severity);
@@ -125,6 +105,26 @@ NSString *BSGFormatSeverity(BSGSeverity severity);
     XCTAssertNil([configuration getMetadataFromSection:@"exampleSection3" withKey:@"exampleKey3"]);
 }
 
+- (void)testMissingApiKey {
+    BugsnagConfiguration *configuration = [[BugsnagConfiguration alloc] initWithApiKey:@""];
+    BugsnagClient *client = [[BugsnagClient alloc] initWithConfiguration:configuration];
+    XCTAssertThrowsSpecificNamed([client start], NSException, NSInvalidArgumentException,
+                                 @"An empty apiKey should cause [BugsnagClient start] to throw an exception.");
+    
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wnonnull"
+    configuration.apiKey = nil;
+#pragma clang diagnostic pop
+    XCTAssertThrowsSpecificNamed([client start], NSException, NSInvalidArgumentException,
+                                 @"A missing apiKey should cause [BugsnagClient start] to throw an exception.");
+}
+
+- (void)testInvalidApiKey {
+    BugsnagConfiguration *configuration = [[BugsnagConfiguration alloc] initWithApiKey:@"INVALID-API-KEY"];
+    BugsnagClient *client = [[BugsnagClient alloc] initWithConfiguration:configuration];
+    XCTAssertNoThrow([client start], @"[BugsnagClient start] should not throw an exception if the apiKey appears to be malformed");
+}
+
 /**
  * Test that user info is stored and retreived correctly
  */
@@ -187,6 +187,8 @@ NSString *BSGFormatSeverity(BSGSeverity severity);
     XCTAssertEqual(expected.enabledReleaseStages, actual.enabledReleaseStages);
     XCTAssertEqualObjects(expected.endpoints.notify, actual.endpoints.notify);
     XCTAssertEqualObjects(expected.endpoints.sessions, actual.endpoints.sessions);
+    XCTAssertEqual(expected.maxPersistedEvents, actual.maxPersistedEvents);
+    XCTAssertEqual(expected.maxPersistedSessions, actual.maxPersistedSessions);
     XCTAssertEqual(expected.maxBreadcrumbs, actual.maxBreadcrumbs);
     XCTAssertEqual(expected.persistUser, actual.persistUser);
     XCTAssertEqual([expected.redactedKeys count], [actual.redactedKeys count]);
@@ -209,11 +211,15 @@ NSString *BSGFormatSeverity(BSGSeverity severity);
 
     // Modify some arbitrary properties
     config.persistUser = !config.persistUser;
+    config.maxPersistedEvents = config.maxPersistedEvents * 2;
+    config.maxPersistedSessions = config.maxPersistedSessions * 2;
     config.maxBreadcrumbs = config.maxBreadcrumbs * 2;
     config.appVersion = @"99.99.99";
 
     // Ensure the changes haven't been reflected in our copy
     XCTAssertNotEqual(initialConfig.persistUser, config.persistUser);
+    XCTAssertNotEqual(initialConfig.maxPersistedEvents, config.maxPersistedEvents);
+    XCTAssertNotEqual(initialConfig.maxPersistedSessions, config.maxPersistedSessions);
     XCTAssertNotEqual(initialConfig.maxBreadcrumbs, config.maxBreadcrumbs);
     XCTAssertNotEqualObjects(initialConfig.appVersion, config.appVersion);
 
@@ -231,6 +237,8 @@ NSString *BSGFormatSeverity(BSGSeverity severity);
     BugsnagConfiguration *updatedConfig = [[BugsnagConfiguration alloc] initWithApiKey:DUMMY_APIKEY_32CHAR_2];
     updatedConfig.persistUser = !initialConfig.persistUser;
     updatedConfig.maxBreadcrumbs = initialConfig.maxBreadcrumbs * 2;
+    updatedConfig.maxPersistedEvents = initialConfig.maxPersistedEvents * 2;
+    updatedConfig.maxPersistedSessions = initialConfig.maxPersistedSessions * 2;
     updatedConfig.appVersion = @"99.99.99";
 
     [Bugsnag startWithConfiguration:updatedConfig];
@@ -249,12 +257,11 @@ NSString *BSGFormatSeverity(BSGSeverity severity);
     BugsnagClient *client = [[BugsnagClient alloc] initWithConfiguration:configuration];
     [client start];
 
-    NSMutableArray *breadcrumbs = client.breadcrumbs.breadcrumbs;
-    XCTAssertEqual(0, [breadcrumbs count]);
+    XCTAssertEqual(client.breadcrumbs.breadcrumbs.count, 0);
 
     // small breadcrumb can be left without issue
     [client leaveBreadcrumbWithMessage:@"Hello World"];
-    XCTAssertEqual(1, [breadcrumbs count]);
+    XCTAssertEqual(client.breadcrumbs.breadcrumbs.count, 1);
 
     // large breadcrumb is also left without issue
     __block NSUInteger crumbSize = 0;
@@ -272,10 +279,30 @@ NSString *BSGFormatSeverity(BSGSeverity severity);
                               metadata:largeMetadata
                                andType:BSGBreadcrumbTypeManual];
     XCTAssertTrue(crumbSize > 4096); // previous 4kb limit
-    XCTAssertEqual(2, [breadcrumbs count]);
+    XCTAssertEqual(client.breadcrumbs.breadcrumbs.count, 2);
     XCTAssertNotNil(crumb);
     XCTAssertEqualObjects(@"Hello World", crumb.message);
     XCTAssertEqualObjects(largeMetadata, crumb.metadata);
+}
+
+- (void)testMetadataInvalidKey {
+    BugsnagConfiguration *configuration = [[BugsnagConfiguration alloc] initWithApiKey:DUMMY_APIKEY_32CHAR_1];
+    configuration.enabledBreadcrumbTypes = BSGEnabledBreadcrumbTypeNone;
+    BugsnagClient *client = [[BugsnagClient alloc] initWithConfiguration:configuration];
+    [client start];
+
+    XCTAssertEqual(client.breadcrumbs.breadcrumbs.count, 0);
+
+    id badMetadata = @{
+        @"test": @"string key is fine",
+        @85 : @"numeric key would break JSON"
+    };
+
+    [client leaveBreadcrumbWithMessage:@"test msg" metadata:badMetadata andType:BSGBreadcrumbTypeUser];
+
+    XCTAssertEqual(client.breadcrumbs.breadcrumbs.count, 0, @"A breadcrumb with invalid JSON payload should be rejected");
+
+    [client notifyError:[NSError errorWithDomain:@"test" code:0 userInfo:badMetadata]];
 }
 
 - (NSDictionary *)generateLargeMetadata {
@@ -287,6 +314,28 @@ NSString *BSGFormatSeverity(BSGSeverity severity);
         dict[key] = value;
     }
     return dict;
+}
+
+static BOOL testOnCrashHandlerNotCalledForOOM_didCallOnCrashHandler;
+
+static void testOnCrashHandlerNotCalledForOOM_onCrashHandler(const BSG_KSCrashReportWriter *writer) {
+    testOnCrashHandlerNotCalledForOOM_didCallOnCrashHandler = YES;
+}
+
+static BOOL testOnCrashHandlerNotCalledForOOM_shouldReportOOM(BugsnagClient *client, SEL _cmd) {
+    return YES;
+}
+
+- (void)testOnCrashHandlerNotCalledForOOM {
+    BugsnagConfiguration *configuration = [[BugsnagConfiguration alloc] initWithApiKey:DUMMY_APIKEY_32CHAR_1];
+    configuration.onCrashHandler = testOnCrashHandlerNotCalledForOOM_onCrashHandler;
+    BugsnagClient *client = [[BugsnagClient alloc] initWithConfiguration:configuration];
+    Method method = class_getInstanceMethod([BugsnagClient class], @selector(shouldReportOOM));
+    NSParameterAssert(method != NULL);
+    void *originalImplementation = method_setImplementation(method, (void *)testOnCrashHandlerNotCalledForOOM_shouldReportOOM);
+    [client start];
+    method_setImplementation(method, originalImplementation);
+    XCTAssertFalse(testOnCrashHandlerNotCalledForOOM_didCallOnCrashHandler, @"onCrashHandler should not be called for OOMs");
 }
 
 @end

@@ -9,6 +9,8 @@
 #import <XCTest/XCTest.h>
 #import <Bugsnag/Bugsnag.h>
 #import "BugsnagTestConstants.h"
+#import "BugsnagKVStoreObjC.h"
+#import "TestSupport.h"
 
 /**
  * Validates that the Bugsnag API interface handles any invalid input gracefully.
@@ -19,12 +21,13 @@
 
 @implementation BugsnagApiValidationTest
 
-+ (void)setUp {
+- (void)setUp {
     [Bugsnag startWithApiKey:DUMMY_APIKEY_32CHAR_1];
 }
 
 - (void)testAppDidCrashLastLaunch {
-    XCTAssertFalse([Bugsnag appDidCrashLastLaunch]);
+    [TestSupport purgePersistentData];
+    XCTAssertFalse(Bugsnag.lastRunInfo.crashed);
 }
 
 - (void)testValidNotify {
@@ -85,7 +88,7 @@
 }
 
 - (void)testValidAppDidCrashLastLaunch {
-    XCTAssertFalse(Bugsnag.appDidCrashLastLaunch);
+    XCTAssertFalse(Bugsnag.lastRunInfo.crashed);
 }
 
 - (void)testValidUser {

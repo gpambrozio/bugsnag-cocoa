@@ -3,24 +3,18 @@
 // Copyright (c) 2018 Bugsnag. All rights reserved.
 //
 
-#import <Foundation/Foundation.h>
 #import <XCTest/XCTest.h>
 
-#import "BugsnagEvent.h"
+#import "BugsnagEvent+Private.h"
 
 @interface BugsnagThreadSerializationTest : XCTestCase
-@end
-
-@interface BugsnagEvent ()
-- (NSDictionary *)toJson;
-- (instancetype)initWithKSReport:(NSDictionary *)report;
 @end
 
 @implementation BugsnagThreadSerializationTest
 
 - (void)testEmptyThreads {
     BugsnagEvent *event = [self generateReportWithThreads:@[]];
-    NSArray *threads = [event toJson][@"threads"];
+    NSArray *threads = [event toJsonWithRedactedKeys:nil][@"threads"];
     XCTAssertTrue(threads.count == 0);
 }
 
@@ -63,7 +57,7 @@
     ];
 
     BugsnagEvent *event = [self generateReportWithThreads:trace];
-    NSArray *threads = [event toJson][@"threads"];
+    NSArray *threads = [event toJsonWithRedactedKeys:nil][@"threads"];
     XCTAssertTrue(threads.count == 2);
 
     // first thread is crashed, should be serialised and contain 'errorReportingThread' flag

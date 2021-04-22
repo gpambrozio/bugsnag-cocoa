@@ -12,17 +12,13 @@
 
 - (instancetype)init {
     if (self = [super init]) {
-        _unhandledExceptions = true;
-        _signals = true;
-        _cppExceptions = true;
-        _machExceptions = true;
-        _unhandledRejections = true;
-
-#if DEBUG
-        _ooms = false;
-#else
-        _ooms = true;
-#endif
+        _appHangs = YES;
+        _unhandledExceptions = YES;
+        _signals = YES;
+        _cppExceptions = YES;
+        _machExceptions = YES;
+        _unhandledRejections = YES;
+        _ooms = YES;
     }
     return self;
 }

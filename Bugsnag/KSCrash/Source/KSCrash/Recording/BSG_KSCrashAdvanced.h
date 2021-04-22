@@ -25,9 +25,6 @@
 //
 
 #import "BSG_KSCrash.h"
-#import "BSG_KSCrashReportStore.h"
-
-@class BugsnagErrorReportSink;
 
 /**
  * Advanced interface to the BSG_KSCrash system.
@@ -38,7 +35,7 @@
 
 /** Total active time elapsed since the last crash. */
 @property(nonatomic, readonly, assign)
-    NSTimeInterval activeDurationSinceLastCrash;
+    NSTimeInterval foregroundDurationSinceLastCrash;
 
 /** Total time backgrounded elapsed since the last crash. */
 @property(nonatomic, readonly, assign)
@@ -51,7 +48,7 @@
 @property(nonatomic, readonly, assign) int sessionsSinceLastCrash;
 
 /** Total active time elapsed since launch. */
-@property(nonatomic, readonly, assign) NSTimeInterval activeDurationSinceLaunch;
+@property(nonatomic, readonly, assign) NSTimeInterval foregroundDurationSinceLaunch;
 
 /** Total time backgrounded elapsed since launch. */
 @property(nonatomic, readonly, assign)
@@ -67,35 +64,7 @@
  * (default 5) */
 @property(nonatomic, readwrite, assign) int maxStoredReports;
 
-/** The total number of unsent reports. Note: This is an expensive operation.
- */
-- (NSUInteger)reportCount;
-
-/** Get all reports, with data types corrected, as dictionaries.
- */
-- (NSArray *)allReports;
-
-/** Get all reports as dictionaries, indexed by file name.
- */
-- (NSDictionary <NSString *, NSDictionary *> *)allReportsByFilename;
-
 #pragma mark - Configuration -
-
-/** Init BSG_KSCrash instance with custom report files directory path. */
-- (id)initWithReportFilesDirectory:(NSString *)reportFilesDirectory;
-
-/** Store containing all crash reports. */
-@property(nonatomic, readwrite, retain)
-    BSG_KSCrashReportStore *crashReportStore;
-
-/** The report sink where reports get sent.
- * This MUST be set or else the reporter will not send reports (although it will
- * still record them).
- *
- * Note: If you use an installation, it will automatically set this property.
- *       Do not modify it in such a case.
- */
-@property(nonatomic, readwrite, retain) BugsnagErrorReportSink *sink;
 
 /** C Function to call during a crash report to give the callee an opportunity
  * to add to the report. NULL = ignore.
@@ -124,14 +93,6 @@
  */
 @property(nonatomic, readwrite, assign) bool printTraceToStdout;
 
-/** Sets logFilePath to the default log file location
- * (Library/Caches/KSCrashReports/<bundle name>-CrashLog.txt).
- * If the file exists, it will be overwritten.
- *
- * @return true if the operation was successful.
- */
-- (BOOL)redirectConsoleLogsToDefaultFile;
-
 /** Redirect the log of BSG_KSCrash's activities from the console to the
  * specified log file.
  *
@@ -142,15 +103,5 @@
  */
 - (BOOL)redirectConsoleLogsToFile:(NSString *)fullPath
                         overwrite:(BOOL)overwrite;
-
-#pragma mark - Operations -
-
-/** Send the specified reports to the current sink.
- *
- * @param reports The reports to send.
- * @param block Called when sending is complete (nil = ignore).
- */
-- (void)sendReports:(NSDictionary <NSString *, NSDictionary *> *)reports
-          withBlock:(BSGOnErrorSentBlock)block;
 
 @end

@@ -1,16 +1,135 @@
 steps:
   - label: Build cocoa IPA
+    key: cocoa_fixture
     timeout_in_minutes: 20
     agents:
-      queue: opensource-mac
-    artifact_paths: features/fixtures/ios-swift-cocoapods/output/*
+      queue: opensource-mac-cocoa-11
+    artifact_paths:
+      - features/fixtures/ios-swift-cocoapods/output/iOSTestApp.ipa
+      - features/fixtures/macos/output/macOSTestApp.zip
     commands:
       - ./features/scripts/export_ios_app.sh
+      - ./features/scripts/export_mac_app.sh
 
-  - wait
+  - label: Static framework and Swift Package Manager builds
+    timeout_in_minutes: 10
+    agents:
+      queue: opensource-mac-cocoa-10.15
+    concurrency: 3
+    concurrency_group: cocoa-unit-tests
+    env:
+      LANG: "en_GB.UTF-8"
+    commands:
+      - mkdir -p features/fixtures/carthage-proj
+      - make build_swift
+      - make build_ios_static
 
-  - label: ':ios: iOS 13 end-to-end tests'
-    timeout_in_minutes: 60
+  - label: Static Carthage build
+    timeout_in_minutes: 10
+    agents:
+      queue: opensource-mac-cocoa-10.15
+    concurrency: 3
+    concurrency_group: cocoa-unit-tests
+    env:
+      LANG: "en_GB.UTF-8"
+      DEVELOPER_DIR: "/Applications/Xcode11.app/Contents/Developer"
+    commands:
+      - mkdir -p features/fixtures/carthage-proj
+      - make build_swift
+
+  - label: macOS 10.15 unit tests
+    timeout_in_minutes: 10
+    agents:
+      queue: opensource-mac-cocoa-10.15
+    concurrency: 3
+    concurrency_group: cocoa-unit-tests
+    env:
+      LANG: "en_GB.UTF-8"
+      TEST_CONFIGURATION: "Debug"
+      PLATFORM: "macOS"
+    commands:
+      - make bootstrap
+      - make analyze test
+
+  - label: macOS 10.13 unit tests
+    timeout_in_minutes: 10
+    agents:
+      queue: opensource-mac-cocoa-10.13
+    env:
+      LANG: "en_GB.UTF-8"
+      TEST_CONFIGURATION: "Debug"
+      PLATFORM: "macOS"
+    commands:
+      - make bootstrap
+      - make analyze test
+    artifact_paths:
+      - xcodebuild.log
+
+  - label: iOS 14 unit tests
+    timeout_in_minutes: 10
+    agents:
+      queue: opensource-mac-cocoa-11
+    env:
+      LANG: "en_GB.UTF-8"
+      TEST_CONFIGURATION: "Debug"
+      PLATFORM: "iOS"
+      OS: "14.3"
+    commands:
+      - make bootstrap
+      - make test
+    artifact_paths:
+      - xcodebuild.log
+
+  - label: iOS 9 unit tests
+    timeout_in_minutes: 10
+    agents:
+      queue: opensource-mac-cocoa-10.13
+    env:
+      LANG: "en_GB.UTF-8"
+      PLATFORM: "iOS"
+      OS: "9.3"
+      DEVICE: "iPhone 5s"
+    commands:
+      - make bootstrap
+      - TEST_CONFIGURATION=Debug make test
+      - TEST_CONFIGURATION=Release make test
+    artifact_paths:
+      - xcodebuild.log
+
+  - label: tvOS 14 unit tests
+    timeout_in_minutes: 10
+    agents:
+      queue: opensource-mac-cocoa-11
+    env:
+      LANG: "en_GB.UTF-8"
+      TEST_CONFIGURATION: "Debug"
+      PLATFORM: "tvOS"
+      OS: "14.3"
+    commands:
+      - make bootstrap
+      - make test
+    artifact_paths:
+      - xcodebuild.log
+
+  - label: tvOS 9 unit tests
+    timeout_in_minutes: 10
+    agents:
+      queue: opensource-mac-cocoa-10.13
+    env:
+      LANG: "en_GB.UTF-8"
+      TEST_CONFIGURATION: "Debug"
+      PLATFORM: "tvOS"
+      OS: "9.2"
+    commands:
+      - make bootstrap
+      - make test
+    artifact_paths:
+      - xcodebuild.log
+
+  - label: ':ios: iOS 14 barebones end-to-end tests'
+    depends_on:
+      - cocoa_fixture
+    timeout_in_minutes: 10
     agents:
       queue: opensource
     plugins:
@@ -18,13 +137,26 @@ steps:
         download: ["features/fixtures/ios-swift-cocoapods/output/iOSTestApp.ipa"]
       docker-compose#v3.3.0:
         run: cocoa-maze-runner
-    env:
-      DEVICE_TYPE: IOS_13
-    concurrency: 10
+        command:
+          - "features/app_hangs.feature"
+          - "features/barebone_tests.feature"
+          - "--app=/app/build/iOSTestApp.ipa"
+          - "--farm=bs"
+          - "--device=IOS_14"
+          - "--resilient"
+          - "--appium-version=1.17.0"
+          - "--fail-fast"
+    concurrency: 9
     concurrency_group: browserstack-app
+    retry:
+      automatic:
+        - exit_status: -1  # Agent was lost
+          limit: 2
 
-  - label: ':ios: iOS 12 end-to-end tests'
-    timeout_in_minutes: 60
+  - label: ':ios: iOS 10 barebones end-to-end tests'
+    depends_on:
+      - cocoa_fixture
+    timeout_in_minutes: 10
     agents:
       queue: opensource
     plugins:
@@ -32,39 +164,57 @@ steps:
         download: ["features/fixtures/ios-swift-cocoapods/output/iOSTestApp.ipa"]
       docker-compose#v3.3.0:
         run: cocoa-maze-runner
-    env:
-      DEVICE_TYPE: IOS_12
-    concurrency: 10
+        command:
+          - "features/app_hangs.feature"
+          - "features/barebone_tests.feature"
+          - "--app=/app/build/iOSTestApp.ipa"
+          - "--farm=bs"
+          - "--device=IOS_10"
+          - "--appium-version=1.8.0"
+          - "--fail-fast"
+    concurrency: 9
     concurrency_group: browserstack-app
+    retry:
+      automatic:
+        - exit_status: -1  # Agent was lost
+          limit: 2
 
-  - label: ':ios: iOS 11 end-to-end tests'
+  - label: ':apple: macOS 10.15 barebones end-to-end tests'
+    depends_on:
+      - cocoa_fixture
     timeout_in_minutes: 60
     agents:
-      queue: opensource
+      queue: opensource-mac-cocoa-10.15
     plugins:
       artifacts#v1.3.0:
-        download: ["features/fixtures/ios-swift-cocoapods/output/iOSTestApp.ipa"]
-      docker-compose#v3.3.0:
-        run: cocoa-maze-runner
-    env:
-      DEVICE_TYPE: IOS_11
-    concurrency: 10
-    concurrency_group: browserstack-app
-    soft_fail:
-      - exit_status: "*"
+        download: ["features/fixtures/macos/output/macOSTestApp.zip"]
+        upload: ["macOSTestApp.log"]
+    commands:
+      - bundle install
+      - bundle exec maze-runner
+        features/app_hangs.feature
+        features/barebone_tests.feature
+        --farm=local
+        --os=macos
+        --os-version=10.15
+        --app=macOSTestApp
+        --tags='not @skip_macos'
+        --fail-fast
 
-  - label: ':ios: iOS 10 end-to-end tests'
-    timeout_in_minutes: 60
+  - label: 'macOS 10.15 stress test'
+    timeout_in_minutes: 3
     agents:
-      queue: opensource
-    plugins:
-      artifacts#v1.3.0:
-        download: ["features/fixtures/ios-swift-cocoapods/output/iOSTestApp.ipa"]
-      docker-compose#v3.3.0:
-        run: cocoa-maze-runner
+      queue: opensource-mac-cocoa
     env:
-      DEVICE_TYPE: IOS_10
-    concurrency: 10
-    concurrency_group: browserstack-app
-    soft_fail:
-      - exit_status: "*"
+      STRESS_TEST: "true"
+    commands:
+      - bundle install
+      - bundle exec maze-runner
+        features/stress_test.feature
+        --no-log-requests
+    artifact_paths:
+      - features/fixtures/macos-stress-test/BugsnagStressTest.stdout.log
+      - features/fixtures/macos-stress-test/BugsnagStressTest.stderr.log
+
+  - label: 'Conditionally trigger full set of tests'
+    command: sh -c .buildkite/pipeline_trigger.sh

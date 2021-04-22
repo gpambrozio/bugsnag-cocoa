@@ -7,22 +7,12 @@
 //
 
 @import XCTest;
-#import "Bugsnag.h"
 
-@interface Bugsnag ()
-+ (BugsnagConfiguration *)configuration;
-@end
+#import "Bugsnag+Private.h"
+#import "BugsnagEvent+Private.h"
 
 @interface BugsnagEventFromKSCrashReportTest : XCTestCase
 @property BugsnagEvent *event;
-@end
-
-@interface BugsnagEvent ()
-- (NSDictionary *_Nonnull)toJson;
-- (BOOL)shouldBeSent;
-- (instancetype)initWithKSReport:(NSDictionary *)event;
-@property(readwrite, copy, nullable) NSArray *enabledReleaseStages;
-@property(readwrite) NSUInteger depth;
 @end
 
 @implementation BugsnagEventFromKSCrashReportTest
@@ -117,9 +107,9 @@
 }
 
 - (void)testAppVersion {
-    NSDictionary *dictionary = [self.event toJson];
-    XCTAssertEqualObjects(@"1.0", dictionary[@"app"][@"version"]);
-    XCTAssertEqualObjects(@"3", dictionary[@"app"][@"bundleVersion"]);
+    NSDictionary *dictionary = [self.event toJsonWithRedactedKeys:nil];
+    XCTAssertEqualObjects(dictionary[@"app"][@"version"], @"1.0");
+    XCTAssertEqualObjects(dictionary[@"app"][@"bundleVersion"], @"1");
 }
 
 - (void)testThreadsPopulated {

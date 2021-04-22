@@ -8,45 +8,18 @@
 
 #import <XCTest/XCTest.h>
 
-#import "BugsnagApp.h"
-#import "BugsnagDevice.h"
-#import "BugsnagSession.h"
-#import "BugsnagSessionInternal.h"
+#import "BugsnagApp+Private.h"
+#import "BugsnagConfiguration+Private.h"
+#import "BugsnagDevice+Private.h"
+#import "BugsnagSession+Private.h"
+#import "BugsnagUser+Private.h"
 #import "BSG_RFC3339DateTool.h"
-#import "BugsnagConfiguration.h"
 #import "BugsnagTestConstants.h"
-
-@interface BugsnagApp ()
-+ (BugsnagApp *)appWithDictionary:(NSDictionary *)data
-                           config:(BugsnagConfiguration *)config
-                     codeBundleId:(NSString *)codeBundleId;
-- (NSDictionary *)toDict;
-@end
-
-@interface BugsnagDevice ()
-+ (BugsnagDevice *)deviceWithDictionary:(NSDictionary *)data;
-- (NSDictionary *)toDictionary;
-@end
-
-@interface BugsnagSession ()
-@property NSUInteger unhandledCount;
-@property NSUInteger handledCount;
-- (NSDictionary *_Nonnull)toJson;
-- (NSDictionary *_Nonnull)toDictionary;
-@end
-
-@interface BugsnagUser ()
-- (instancetype)initWithUserId:(NSString *)userId name:(NSString *)name emailAddress:(NSString *)emailAddress;
-@end
 
 @interface BugsnagSessionTest : XCTestCase
 @property BugsnagApp *app;
 @property BugsnagDevice *device;
 @property NSDictionary *serializedSession;
-@end
-
-@interface BugsnagUser ()
-- (instancetype)initWithUserId:(NSString *)userId name:(NSString *)name emailAddress:(NSString *)emailAddress;
 @end
 
 @implementation BugsnagSessionTest
@@ -78,7 +51,7 @@
             }
     };
 
-    BugsnagConfiguration *config = [[BugsnagConfiguration alloc] initWithApiKey:DUMMY_APIKEY_32CHAR_1];
+    BugsnagConfiguration *config = [[BugsnagConfiguration alloc] initWithDictionaryRepresentation:appData[@"user"][@"config"]];
     config.appType = @"iOS";
     config.bundleVersion = nil;
     return [BugsnagApp appWithDictionary:appData config:config codeBundleId:@"bundle-123"];
@@ -111,7 +84,7 @@
                     }
             }
     };
-    BugsnagDevice *device = [BugsnagDevice deviceWithDictionary:deviceData];
+    BugsnagDevice *device = [BugsnagDevice deviceWithKSCrashReport:deviceData];
     device.locale = @"en-US";
     return device;
 }

@@ -21,27 +21,40 @@
 
 #import "BugsnagCollections.h"
 
-void BSGDictSetSafeObject(NSMutableDictionary *dict, id object,
-                          id<NSCopying> key) {
-    dict[key] = object ?: [NSNull null];
+#import "BSG_RFC3339DateTool.h"
+#import "BSGJSONSerialization.h"
+
+// MARK: NSArray
+
+NSArray * BSGArrayWithObject(id _Nullable object) {
+    return object ? @[(id _Nonnull)object] : @[];
 }
 
-void BSGArrayAddSafeObject(NSMutableArray *array, id object) {
-    [array addObject:object ?: [NSNull null]];
-}
-
-void BSGDictInsertIfNotNil(NSMutableDictionary *dict, id object,
-                           id<NSCopying> key) {
-    if (object && key) {
-        dict[key] = object;
-    }
-}
-
-void BSGArrayInsertIfNotNil(NSMutableArray *array, id object) {
+void BSGArrayAddIfNonnull(NSMutableArray *array, id _Nullable object) {
     if (object) {
-        [array addObject:object];
+        [array addObject:(id _Nonnull)object];
     }
 }
+
+NSArray * BSGArrayMap(NSArray *array, id _Nullable (^ transform)(id)) {
+    NSMutableArray *mappedArray = [NSMutableArray array];
+    for (id object in array) {
+        id mapped = transform(object);
+        if (mapped) {
+            [mappedArray addObject:mapped];
+        }
+    }
+    return mappedArray;
+}
+
+NSArray * BSGArraySubarrayFromIndex(NSArray *array, NSUInteger index) {
+    if (index >= array.count) {
+        return @[];
+    }
+    return [array subarrayWithRange:NSMakeRange(index, array.count - index)];
+}
+
+// MARK: - NSDictionary
 
 NSDictionary *BSGDictMerge(NSDictionary *source, NSDictionary *destination) {
     if ([destination count] == 0) {
@@ -62,4 +75,75 @@ NSDictionary *BSGDictMerge(NSDictionary *source, NSDictionary *destination) {
         dict[key] = srcEntry;
     }
     return dict;
+}
+
+NSDictionary * BSGJSONDictionary(NSDictionary *dictionary) {
+    if (!dictionary) {
+        return nil;
+    }
+    if ([BSGJSONSerialization isValidJSONObject:dictionary]) {
+        return dictionary;
+    }
+    NSMutableDictionary *json = [NSMutableDictionary dictionary];
+    for (id key in dictionary) {
+        if (![key isKindOfClass:[NSString class]]) {
+            continue;
+        }
+        const id value = dictionary[key];
+        if ([BSGJSONSerialization isValidJSONObject:@{key: value}]) {
+            json[key] = value;
+        } else if ([value isKindOfClass:[NSDictionary class]]) {
+            json[key] = BSGJSONDictionary(value);
+        } else {
+            json[key] = ((NSObject *)value).description;
+        }
+    }
+    return json;
+}
+
+// MARK: - NSSet
+
+void BSGSetAddIfNonnull(NSMutableSet *set, id _Nullable object) {
+    if (object) {
+        [set addObject:(id _Nonnull)object];
+    }
+}
+
+// MARK: - Deserialization
+
+NSDictionary * _Nullable BSGDeserializeDict(id _Nullable rawValue) {
+    if (![rawValue isKindOfClass:[NSDictionary class]]) {
+        return nil;
+    }
+    return (NSDictionary *)rawValue;
+}
+
+id _Nullable BSGDeserializeObject(id _Nullable rawValue, id _Nullable (^ deserializer)(NSDictionary * _Nonnull dict)) {
+    if (![rawValue isKindOfClass:[NSDictionary class]]) {
+        return nil;
+    }
+    return deserializer((NSDictionary *)rawValue);
+}
+
+id _Nullable BSGDeserializeArrayOfObjects(id _Nullable rawValue, id _Nullable (^ deserializer)(NSDictionary * _Nonnull dict)) {
+    if (![rawValue isKindOfClass:[NSArray class]]) {
+        return nil;
+    }
+    return BSGArrayMap((NSArray *)rawValue, ^id _Nullable(id _Nonnull value) {
+        return BSGDeserializeObject(value, deserializer);
+    });
+}
+
+NSString * _Nullable BSGDeserializeString(id _Nullable rawValue) {
+    if (![rawValue isKindOfClass:[NSString class]]) {
+        return nil;
+    }
+    return (NSString *)rawValue;
+}
+
+NSDate * _Nullable BSGDeserializeDate(id _Nullable rawValue) {
+    if (![rawValue isKindOfClass:[NSString class]]) {
+        return nil;
+    }
+    return [BSG_RFC3339DateTool dateFromString:(NSString *)rawValue];
 }

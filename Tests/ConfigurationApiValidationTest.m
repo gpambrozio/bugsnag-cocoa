@@ -8,15 +8,9 @@
 
 #import <XCTest/XCTest.h>
 #import <Bugsnag/Bugsnag.h>
+#import "BugsnagConfiguration+Private.h"
 #import "BugsnagPlugin.h"
 #import "BugsnagTestConstants.h"
-
-@interface BugsnagConfiguration ()
-@property(nonatomic, readwrite, strong) NSMutableArray *onSendBlocks;
-@property(nonatomic, readwrite, strong) NSMutableArray *onSessionBlocks;
-@property(nonatomic, readwrite, strong) NSMutableArray *onBreadcrumbBlocks;
-@property(nonatomic, readwrite, strong) NSMutableSet *plugins;
-@end
 
 @interface FooPlugin: NSObject<BugsnagPlugin>
 @end
@@ -132,6 +126,24 @@
     XCTAssertNil(self.config.appType);
     self.config.appType = @"cocoa";
     XCTAssertEqualObjects(@"cocoa", self.config.appType);
+}
+
+- (void)testValidMaxPersistedEvents {
+    self.config.maxPersistedEvents = 1;
+    XCTAssertEqual(1, self.config.maxPersistedEvents);
+    self.config.maxPersistedEvents = 100;
+    XCTAssertEqual(100, self.config.maxPersistedEvents);
+    self.config.maxPersistedEvents = 40;
+    XCTAssertEqual(40, self.config.maxPersistedEvents);
+}
+
+- (void)testValidMaxPersistedSessions {
+    self.config.maxPersistedSessions = 1;
+    XCTAssertEqual(1, self.config.maxPersistedSessions);
+    self.config.maxPersistedSessions = 100;
+    XCTAssertEqual(100, self.config.maxPersistedSessions);
+    self.config.maxPersistedSessions = 40;
+    XCTAssertEqual(40, self.config.maxPersistedSessions);
 }
 
 - (void)testValidMaxBreadcrumbs {

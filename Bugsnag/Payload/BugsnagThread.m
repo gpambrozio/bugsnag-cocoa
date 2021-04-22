@@ -6,9 +6,11 @@
 //  Copyright © 2020 Bugsnag. All rights reserved.
 //
 
-#import "BugsnagThread.h"
+#import "BugsnagThread+Private.h"
+
+#import "BSG_KSCrashReportFields.h"
 #import "BugsnagCollections.h"
-#import "BugsnagStackframe.h"
+#import "BugsnagStackframe+Private.h"
 #import "BugsnagStacktrace.h"
 #import "BugsnagKeys.h"
 
@@ -20,19 +22,6 @@ NSString *BSGSerializeThreadType(BSGThreadType type) {
     return type == BSGThreadTypeCocoa ? @"cocoa" : @"reactnativejs";
 }
 
-@interface BugsnagStacktrace ()
-- (NSArray *)toArray;
-@end
-
-@interface BugsnagStacktrace ()
-+ (instancetype)stacktraceFromJson:(NSDictionary *)json;
-@property NSMutableArray<BugsnagStackframe *> *trace;
-@end
-
-@interface BugsnagStackframe ()
-- (NSDictionary *)toDictionary;
-@end
-
 @implementation BugsnagThread
 
 + (instancetype)threadFromJson:(NSDictionary *)json {
@@ -42,12 +31,12 @@ NSString *BSGSerializeThreadType(BSGThreadType type) {
     NSString *type = json[@"type"];
     BSGThreadType threadType = BSGParseThreadType(type);
     BOOL errorReportingThread = json[@"errorReportingThread"] && [json[@"errorReportingThread"] boolValue];
-    BugsnagStacktrace *stacktrace = [BugsnagStacktrace stacktraceFromJson:json[BSGKeyStacktrace]];
+    NSArray<BugsnagStackframe *> *stacktrace = [BugsnagStacktrace stacktraceFromJson:json[BSGKeyStacktrace]].trace;
     BugsnagThread *thread = [[BugsnagThread alloc] initWithId:json[@"id"]
                                                          name:json[@"name"]
                                          errorReportingThread:errorReportingThread
                                                          type:threadType
-                                                        trace:stacktrace];
+                                                   stacktrace:stacktrace];
     return thread;
 }
 
@@ -55,43 +44,43 @@ NSString *BSGSerializeThreadType(BSGThreadType type) {
                       name:(NSString *)name
       errorReportingThread:(BOOL)errorReportingThread
                       type:(BSGThreadType)type
-                     trace:(BugsnagStacktrace *)trace {
+                stacktrace:(NSArray<BugsnagStackframe *> *)stacktrace {
     if (self = [super init]) {
         _id = id;
         _name = name;
         _errorReportingThread = errorReportingThread;
         _type = type;
-        _stacktrace = trace.trace;
+        _stacktrace = stacktrace;
     }
     return self;
 }
 
 - (instancetype)initWithThread:(NSDictionary *)thread binaryImages:(NSArray *)binaryImages {
     if (self = [super init]) {
-        _errorReportingThread = [thread[@"crashed"] boolValue];
-        self.id = [thread[@"index"] stringValue];
-        self.type = BSGThreadTypeCocoa;
-
-        NSArray *backtrace = thread[@"backtrace"][@"contents"];
+        _errorReportingThread = [thread[@BSG_KSCrashField_Crashed] boolValue];
+        _id = [thread[@BSG_KSCrashField_Index] stringValue];
+        _type = BSGThreadTypeCocoa;
+        _crashInfoMessage = [thread[@BSG_KSCrashField_CrashInfoMessage] copy];
+        NSArray *backtrace = thread[@BSG_KSCrashField_Backtrace][@BSG_KSCrashField_Contents];
         BugsnagStacktrace *frames = [[BugsnagStacktrace alloc] initWithTrace:backtrace binaryImages:binaryImages];
-        self.stacktrace = frames.trace;
+        _stacktrace = [frames.trace copy];
     }
     return self;
 }
 
 - (NSDictionary *)toDictionary {
     NSMutableDictionary *dict = [NSMutableDictionary new];
-    BSGDictInsertIfNotNil(dict, self.id, @"id");
-    BSGDictInsertIfNotNil(dict, self.name, @"name");
-    BSGDictSetSafeObject(dict, @(self.errorReportingThread), @"errorReportingThread");
-    BSGDictSetSafeObject(dict, BSGSerializeThreadType(self.type), @"type");
-    BSGDictSetSafeObject(dict, @(self.errorReportingThread), @"errorReportingThread");
+    dict[@"id"] = self.id;
+    dict[@"name"] = self.name;
+    dict[@"errorReportingThread"] = @(self.errorReportingThread);
+    dict[@"type"] = BSGSerializeThreadType(self.type);
+    dict[@"errorReportingThread"] = @(self.errorReportingThread);
 
     NSMutableArray *array = [NSMutableArray new];
     for (BugsnagStackframe *frame in self.stacktrace) {
         [array addObject:[frame toDictionary]];
     }
-    BSGDictSetSafeObject(dict, array, @"stacktrace");
+    dict[@"stacktrace"] = array;
     return dict;
 }
 
@@ -149,22 +138,23 @@ NSString *BSGSerializeThreadType(BSGThreadType type) {
         NSMutableArray *stacktrace = [NSMutableArray array];
 
         for (NSDictionary *frame in backtrace) {
-            NSMutableDictionary *mutableFrame = (NSMutableDictionary *) [frame mutableCopy];
+            NSMutableDictionary *mutableFrame = [frame mutableCopy];
             if (seen++ >= depth) {
                 // Mark the frame so we know where it came from
                 if (seen == 1 && !stackOverflow) {
-                    BSGDictSetSafeObject(mutableFrame, @YES, BSGKeyIsPC);
+                    mutableFrame[BSGKeyIsPC] = @YES;
                 }
                 if (seen == 2 && !stackOverflow && [@[BSGKeySignal, BSGKeyMach] containsObject:errorType]) {
-                    BSGDictSetSafeObject(mutableFrame, @YES, BSGKeyIsLR);
+                    mutableFrame[BSGKeyIsLR] = @YES;
                 }
-                BSGArrayInsertIfNotNil(stacktrace, mutableFrame);
+                [stacktrace addObject:mutableFrame];
             }
         }
-        NSMutableDictionary *copy = [NSMutableDictionary dictionaryWithDictionary:thread];
-        copy[@"backtrace"] = [NSMutableDictionary dictionaryWithDictionary:copy[@"backtrace"]];
-        copy[@"backtrace"][@"contents"] = stacktrace;
-        return copy;
+        NSMutableDictionary *mutableBacktrace = [thread[@"backtrace"] mutableCopy];
+        mutableBacktrace[@"contents"] = stacktrace;
+        NSMutableDictionary *mutableThread = [thread mutableCopy];
+        mutableThread[@"backtrace"] = mutableBacktrace;
+        return mutableThread;
     }
     return thread;
 }

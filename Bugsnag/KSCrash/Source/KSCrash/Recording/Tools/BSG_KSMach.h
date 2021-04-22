@@ -46,8 +46,8 @@ extern "C" {
 // ============================================================================
 
 /** Initializes KSMach.
- * Some functions (currently only bsg_ksmachpthreadFromMachThread) require
- * initialization before use.
+ * Some functions (currently only bsg_ksmachpthreadFromMachThread and
+ * bsg_ksmachfreeMemory) require initialization before use.
  */
 void bsg_ksmach_init(void);
 
@@ -87,7 +87,7 @@ const char *bsg_ksmachexceptionName(exception_type_t exceptionType);
  *
  * @return The code's name or NULL if not found.
  */
-const char *bsg_ksmachkernelReturnCodeName(kern_return_t returnCode);
+const char *bsg_ksmachkernelReturnCodeName(const kern_return_t returnCode);
 
 // ============================================================================
 #pragma mark - Thread State Info -

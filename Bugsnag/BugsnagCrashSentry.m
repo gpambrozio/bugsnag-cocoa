@@ -6,37 +6,32 @@
 //
 //
 
-#import "BSG_KSCrashAdvanced.h"
-#import "BSG_KSCrashC.h"
 
 #import "BugsnagCrashSentry.h"
-#import "BugsnagLogger.h"
-#import "BugsnagErrorReportSink.h"
-#import "BugsnagConfiguration.h"
-#import "Bugsnag.h"
-#import "BugsnagErrorTypes.h"
 
-NSUInteger const BSG_MAX_STORED_REPORTS = 12;
+#import "BSGFileLocations.h"
+#import "BSG_KSCrashAdvanced.h"
+#import "BSG_KSCrashC.h"
+#import "Bugsnag.h"
+#import "BugsnagConfiguration.h"
+#import "BugsnagErrorTypes.h"
+#import "BugsnagLogger.h"
 
 @implementation BugsnagCrashSentry
 
-- (void)install:(BugsnagConfiguration *)config
-      apiClient:(BugsnagErrorReportApiClient *)apiClient
-        onCrash:(BSGReportCallback)onCrash
+- (void)install:(BugsnagConfiguration *)config onCrash:(BSGReportCallback)onCrash
 {
-    BugsnagErrorReportSink *sink = [[BugsnagErrorReportSink alloc] initWithApiClient:apiClient];
     BSG_KSCrash *ksCrash = [BSG_KSCrash sharedInstance];
-    ksCrash.sink = sink;
-    ksCrash.introspectMemory = YES;
+    ksCrash.introspectMemory = NO;
     ksCrash.onCrash = onCrash;
-    ksCrash.maxStoredReports = BSG_MAX_STORED_REPORTS;
+    ksCrash.maxStoredReports = (int)config.maxPersistedEvents;
 
     // overridden elsewhere for handled errors, so we can assume that this only
     // applies to unhandled errors
     ksCrash.threadTracingEnabled = config.sendThreads != BSGThreadSendPolicyNever;
 
-    // User reported events are *always* handled
-    BSG_KSCrashType crashTypes = BSG_KSCrashTypeUserReported;
+    // User reported events do not go through KSCrash
+    BSG_KSCrashType crashTypes = 0;
     
     // If Bugsnag is autodetecting errors then the types of event detected is configurable
     // (otherwise it's just the user reported events)
@@ -47,11 +42,9 @@ NSUInteger const BSG_MAX_STORED_REPORTS = 12;
     
     bsg_kscrash_setHandlingCrashTypes(crashTypes);
     
-    if ((![ksCrash install])) {
+    if ((![ksCrash install:[BSGFileLocations current].kscrashReports])) {
         bsg_log_err(@"Failed to install crash handler. No exceptions will be reported!");
     }
-
-    [sink.apiClient flushPendingData];
 }
 
 /**
@@ -68,24 +61,6 @@ NSUInteger const BSG_MAX_STORED_REPORTS = 12;
                     | (errorTypes.cppExceptions ? BSG_KSCrashTypeCPPException : 0)
                     | (errorTypes.signals ? BSG_KSCrashTypeSignal : 0)
                     | (errorTypes.machExceptions ? BSG_KSCrashTypeMachException : 0));
-}
-
-- (void)reportUserException:(NSString *)reportName
-                     reason:(NSString *)reportMessage
-               handledState:(NSDictionary *)handledState
-                   appState:(NSDictionary *)appState
-          callbackOverrides:(NSDictionary *)overrides
-             eventOverrides:(NSDictionary *)eventOverrides
-                   metadata:(NSDictionary *)metadata
-                     config:(NSDictionary *)config {
-    [[BSG_KSCrash sharedInstance] reportUserException:reportName
-                                               reason:reportMessage
-                                         handledState:handledState
-                                             appState:appState
-                                    callbackOverrides:overrides
-                                       eventOverrides:eventOverrides
-                                             metadata:metadata
-                                               config:config];
 }
 
 @end

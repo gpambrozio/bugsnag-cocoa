@@ -15,10 +15,6 @@
 @property NSArray *binaryImages;
 @end
 
-@interface BugsnagStacktrace ()
-@property NSMutableArray<BugsnagStackframe *> *trace;
-@end
-
 @implementation BugsnagStacktraceTest
 
 - (void)setUp {
@@ -52,6 +48,18 @@
     }
     BugsnagStacktrace *stacktrace = [[BugsnagStacktrace alloc] initWithTrace:trace binaryImages:self.binaryImages];
     XCTAssertEqual(200, [stacktrace.trace count]);
+}
+
+- (void)testNonCocoaJson {
+    NSArray *json = @[
+        @{@"method": @"foo()", @"file": @"src/Giraffe.mm", @"lineNumber": @200, @"columnNumber": @42, @"inProject": @YES},
+        @{@"method": @"foo()", @"file": @"src/Giraffe.mm", @"lineNumber": @200, @"columnNumber": @42},
+        @{@"method": @"foo()", @"file": @"src/Giraffe.mm", @"lineNumber": @200},
+        @{@"method": @"bar()", @"file": @"parser.js"},
+        @{@"method": @"yes()"}
+    ];
+    BugsnagStacktrace *stacktrace = [BugsnagStacktrace stacktraceFromJson:json];
+    XCTAssertEqualObjects([stacktrace toArray], json);
 }
 
 @end

@@ -19,6 +19,7 @@ typedef NS_ENUM(NSUInteger, SeverityReasonType) {
     PromiseRejection,
     LogMessage,
     LikelyOutOfMemory,
+    AppHang,
 };
 
 /**
@@ -43,6 +44,7 @@ NSString *BSGFormatSeverity(BSGSeverity severity);
 @interface BugsnagHandledState : NSObject
 
 @property(nonatomic) BOOL unhandled;
+@property(nonatomic) BOOL unhandledOverridden;
 @property(nonatomic, readonly) SeverityReasonType severityReasonType;
 @property(nonatomic, readonly) BSGSeverity originalSeverity;
 @property(nonatomic) BSGSeverity currentSeverity;
@@ -66,6 +68,7 @@ NSString *BSGFormatSeverity(BSGSeverity severity);
 - (instancetype)initWithSeverityReason:(SeverityReasonType)severityReason
                               severity:(BSGSeverity)severity
                              unhandled:(BOOL)unhandled
+                   unhandledOverridden:(BOOL)unhandledOverridden
                              attrValue:(NSString *)attrValue;
 
 - (NSDictionary *)toJson;

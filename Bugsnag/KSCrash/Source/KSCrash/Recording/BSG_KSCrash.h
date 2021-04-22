@@ -26,11 +26,8 @@
 
 #import <Foundation/Foundation.h>
 
-#import "BugsnagErrorReportSink.h"
-#import "BSGOnErrorSentBlock.h"
 #import "BSG_KSCrashReportWriter.h"
 #import "BSG_KSCrashType.h"
-#import "BugsnagConfiguration.h"
 
 /**
  * Reports any crashes that occur in the application.
@@ -72,56 +69,7 @@
  *
  * @return YES if the reporter successfully installed.
  */
-- (BOOL)install;
-
-/** Send any outstanding crash reports to the current sink.
- * It will only attempt to send the most recent 5 reports. All others will be
- * deleted. Once the reports are successfully sent to the server, they may be
- * deleted locally.
- *
- * Note: property "sink" MUST be set or else this method will call the block
- *       with an error.
- */
-- (void)sendAllReports;
-
-/** Report a custom, user defined exception.
- * This can be useful when dealing with scripting languages.
- *
- * If terminateProgram is true, all sentries will be uninstalled and the
- * application will terminate with an abort().
- *
- * @param name The exception name (for namespacing exception types).
- * @param reason A description of why the exception occurred
- * @param handledState The severity, reason, and handled-ness of the report
- * @param appState breadcrumbs and other app environmental info
- * @param overrides Report fields overridden by callbacks, collated in the
- *        final report
- * @param eventOverrides the Bugsnag Error Payload, for handled errors only
- * @param metadata additional information to attach to the report
- * @param config delivery options
- */
-- (void)reportUserException:(NSString *)name
-                     reason:(NSString *)reason
-               handledState:(NSDictionary *)handledState
-                   appState:(NSDictionary *)appState
-          callbackOverrides:(NSDictionary *)overrides
-             eventOverrides:(NSDictionary *)eventOverrides
-                   metadata:(NSDictionary *)metadata
-                     config:(NSDictionary *)config;
-
-/**
- * Collects a trace of all the threads running in application, if the user has
- * configured this behaviour, and serializes them into an array of BugsnagThread.
- *
- * @param exc the exception to record
- * @param depth the number of frames to discard from the main thread's stacktrace
- * @param recordAllThreads whether all threads should be recorded or just the
- * main thread's stacktrace
- * @return an array of BugsnagThread
- */
-- (NSArray<BugsnagThread *> *)captureThreads:(NSException *)exc
-                                       depth:(int)depth
-                            recordAllThreads:(BOOL)recordAllThreads;
+- (BOOL)install:(NSString *)directory;
 
 /**
  * Collects information about the application's foreground state (duration in foreground/background)
@@ -138,11 +86,6 @@
 * The methodology used for tracing threads.
  */
 @property(nonatomic, readwrite, assign) BOOL threadTracingEnabled;
-
-/**
- * If YES, binary images will be collected for each report.
- */
-@property(nonatomic, readwrite, assign) BOOL writeBinaryImagesForUserReported;
 
 @end
 

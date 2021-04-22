@@ -9,22 +9,13 @@
 #import <Foundation/Foundation.h>
 
 #import "BSG_KSCrashReportWriter.h"
+#import "BSG_KSCrashType.h"
 #import "BugsnagConfiguration.h"
-#import "BugsnagErrorReportApiClient.h"
 
 @interface BugsnagCrashSentry : NSObject
 
-- (void)install:(BugsnagConfiguration *)config
-      apiClient:(BugsnagErrorReportApiClient *)apiClient
-        onCrash:(BSGReportCallback)onCrash;
+- (void)install:(BugsnagConfiguration *)config onCrash:(BSGReportCallback)onCrash;
 
-- (void)reportUserException:(NSString *)reportName
-                     reason:(NSString *)reportMessage
-               handledState:(NSDictionary *)handledState
-                   appState:(NSDictionary *)appState
-          callbackOverrides:(NSDictionary *)overrides
-             eventOverrides:(NSDictionary *)eventOverrides
-                   metadata:(NSDictionary *)metadata
-                     config:(NSDictionary *)config;
+- (BSG_KSCrashType)mapKSToBSGCrashTypes:(BugsnagErrorTypes *)errorTypes;
 
 @end

@@ -37,15 +37,16 @@ extern "C" {
 #include "BSG_KSArchSpecific.h"
 #include "BSG_KSCrashType.h"
 
+#include <CoreFoundation/CoreFoundation.h>
 #include <mach/mach_types.h>
 #include <signal.h>
 #include <stdbool.h>
 
-typedef enum {
+typedef CF_ENUM(unsigned, BSG_KSCrashReservedTheadType) {
     BSG_KSCrashReservedThreadTypeMachPrimary,
     BSG_KSCrashReservedThreadTypeMachSecondary,
     BSG_KSCrashReservedThreadTypeCount
-} BSG_KSCrashReservedTheadType;
+};
 
 typedef struct BSG_KSCrash_SentryContext {
     // Caller defined values. Caller must fill these out prior to installation.
@@ -61,9 +62,6 @@ typedef struct BSG_KSCrash_SentryContext {
      * If true, will capture traces for all running threads
      */
     bool threadTracingEnabled;
-
-    /** If true, will record binary images. */
-    bool writeBinaryImagesForUserReported;
 
     // Implementation defined values. Caller does not initialize these.
 
@@ -133,20 +131,6 @@ typedef struct BSG_KSCrash_SentryContext {
         /** Signal information. */
         const siginfo_t *signalInfo;
     } signal;
-
-    struct {
-        /** The exception name. */
-        const char *name;
-
-        /** Handled exception report info: */
-        const char *overrides; // info set in callbacks
-        const char *eventOverrides; // Bugsnag Error API JSON payload for handled events
-        const char *handledState;
-        const char *metadata;
-        const char *state; // breadcrumbs, other shared app state
-        const char *config; // config options which affect report delivery
-        int discardDepth; // number of frames from the top to remove
-    } userException;
 
 } BSG_KSCrash_SentryContext;
 

@@ -28,6 +28,7 @@
 #import <XCTest/XCTest.h>
 
 #import "BSG_KSMach.h"
+#import "BSG_KSMachApple.h"
 #import <mach/mach_time.h>
 
 
@@ -77,6 +78,14 @@
     NSString* actual = [NSString stringWithCString:bsg_ksmachkernelReturnCodeName(KERN_FAILURE)
                                           encoding:NSUTF8StringEncoding];
     XCTAssertEqualObjects(actual, expected, @"");
+}
+
+- (void) testArmExcBadAccessKernReturnCodeNames
+{
+    XCTAssertEqualObjects(@(bsg_ksmachkernelReturnCodeName(EXC_ARM_DA_ALIGN)), @"EXC_ARM_DA_ALIGN");
+    XCTAssertEqualObjects(@(bsg_ksmachkernelReturnCodeName(EXC_ARM_DA_DEBUG)), @"EXC_ARM_DA_DEBUG");
+    XCTAssertEqualObjects(@(bsg_ksmachkernelReturnCodeName(EXC_ARM_SP_ALIGN)), @"EXC_ARM_SP_ALIGN");
+    XCTAssertEqualObjects(@(bsg_ksmachkernelReturnCodeName(EXC_ARM_SWP)), @"EXC_ARM_SWP");
 }
 
 - (void) testVeryHighKernReturnCodeName
@@ -167,10 +176,13 @@
 - (void) testTimeDifferenceInSeconds
 {
     uint64_t startTime = mach_absolute_time();
+    CFAbsoluteTime cfStartTime = CFAbsoluteTimeGetCurrent();
     [NSThread sleepForTimeInterval:0.1];
     uint64_t endTime = mach_absolute_time();
+    CFAbsoluteTime cfEndTime = CFAbsoluteTimeGetCurrent();
     double diff = bsg_ksmachtimeDifferenceInSeconds(endTime, startTime);
-    XCTAssertTrue(diff >= 0.1 && diff < 0.2, @"");
+    double cfDiff = cfEndTime - cfStartTime;
+    XCTAssertEqualWithAccuracy(diff, cfDiff, 0.001);
 }
 
 // TODO: Disabling this until I figure out what's wrong with queue names.

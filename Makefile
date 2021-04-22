@@ -7,10 +7,6 @@
 # wishing to use the framework.  For that please deploy Bugsnag in your
 # application using one of the supported methods: Cocoapods, Carthage etc.
 #
-# The rules are typically run with some environment variables set, e.g.
-#
-#     $ PLATFORM=macOS make e2e OS=10.11
-#
 #--------------------------------------------------------------------------
 
 # Set up the build environment based on environment variables, or defaults
@@ -19,7 +15,8 @@
 PLATFORM?=iOS
 OS?=latest
 TEST_CONFIGURATION?=Debug
-BUILD_FLAGS=-project Bugsnag.xcodeproj -scheme Bugsnag-$(PLATFORM) -derivedDataPath build/build-$(PLATFORM)
+DATA_PATH=DerivedData
+BUILD_FLAGS=-project Bugsnag.xcodeproj -scheme Bugsnag-$(PLATFORM) -derivedDataPath $(DATA_PATH)
 
 ifeq ($(PLATFORM),macOS)
  SDK?=macosx
@@ -31,7 +28,7 @@ else
   DESTINATION?=platform=tvOS Simulator,name=Apple TV,OS=$(OS)
  else
   SDK?=iphonesimulator
-  DEVICE?=iPhone 5s
+  DEVICE?=iPhone 8
   DESTINATION?=platform=iOS Simulator,name=$(DEVICE),OS=$(OS)
   RELEASE_DIR=Release-iphoneos
  endif
@@ -46,6 +43,11 @@ endif
 # The default rule.
 
 all: build
+
+# A phony target is one that is not really the name of a file; rather it is just a name for a recipe to be executed when you make an explicit request.
+# There are two reasons to use a phony target: to avoid a conflict with a file of the same name, and to improve performance.
+
+.PHONY: all analyze archive bootstrap build build_carthage build_ios_static build_swift bump clean docs help infer prerelease release test test-fixtures
 
 #--------------------------------------------------------------------------
 # Build
@@ -65,8 +67,6 @@ build/Bugsnag-%-$(PRESET_VERSION).zip: build/Build/Products/$(RELEASE_DIR)/Bugsn
 	@cd build/Build/Products/$(RELEASE_DIR); \
 		zip --symlinks -rq ../../../Bugsnag-$*-$(PRESET_VERSION).zip Bugsnag.framework
 
-.PHONY: all build test bump prerelease release clean e2e
-
 bootstrap: ## Install development dependencies
 	@bundle install
 
@@ -84,29 +84,58 @@ build_carthage: ## Build the latest pushed commit with Carthage
 build_swift: ## Build with Swift Package Manager
 	@swift build
 
+compile_commands.json:
+	set -o pipefail && xcodebuild -project Bugsnag.xcodeproj -configuration Release -scheme Bugsnag-iOS \
+		-destination generic/platform=iOS \
+		-derivedDataPath $(DATA_PATH) \
+		build VALID_ARCHS=arm64 RUN_CLANG_STATIC_ANALYZER=NO | \
+		bundle exec xcpretty -r json-compilation-database -o compile_commands.json
+
+#--------------------------------------------------------------------------
+# Static Analysis
+#--------------------------------------------------------------------------
+
+analyze: ## Run Xcode's analyzer on the build and fail if issues found
+	@xcodebuild $(BUILD_FLAGS) -quiet $(BUILD_ONLY_FLAGS) analyze \
+		CLANG_ANALYZER_OUTPUT=html \
+		CLANG_ANALYZER_OUTPUT_DIR=$(DATA_PATH)/analyzer \
+		&& [[ -z `find $(DATA_PATH)/analyzer -name "*.html"` ]]
+
+INFER=$(HOME)/Library/Caches/infer-osx-v1.0.0/bin/infer
+
+infer: $(INFER) compile_commands.json ## Run the "Infer" static analysis tool
+	@$(INFER) run --report-console-limit 100 --compilation-database compile_commands.json
+
+$(INFER):
+	@echo Downloading Infer...
+	@curl -L https://github.com/facebook/infer/releases/download/v1.0.0/infer-osx-v1.0.0.tar.xz | tar -x -C $(HOME)/Library/Caches
+
+OCLINT=$(HOME)/Library/Caches/oclint-20.11/bin/oclint-json-compilation-database
+
+oclint: $(OCLINT) compile_commands.json ## Run the "OCLint" static analysis tool
+ifeq ($(CI), true)
+	@$(OCLINT) -- --report-type=json -o=oclint.json || echo "OCLint exited with an error status"
+else
+	@$(OCLINT) || echo "OCLint exited with an error status"
+endif
+
+$(OCLINT):
+	@echo Downloading oclint...
+	@curl -L https://github.com/oclint/oclint/releases/download/v20.11/oclint-20.11-llvm-11.0.0-x86_64-darwin-macos-big-sur-11.0.1-xcode-12.2.tar.gz | tar -x -C $(HOME)/Library/Caches
+
 #--------------------------------------------------------------------------
 # Testing
 #--------------------------------------------------------------------------
 
 test: ## Run unit tests
+	@sw_vers
+	@$(XCODEBUILD) -version
 	@$(XCODEBUILD) $(BUILD_FLAGS) $(BUILD_ONLY_FLAGS) test $(FORMATTER)
 
-e2e:
-	@make e2e_build
-	@make e2e_run
-
-e2e_build: ## Build the end-to-end test fixture
+test-fixtures: ## Build the end-to-end test fixture
 	@./features/scripts/export_ios_app.sh
+	@./features/scripts/export_mac_app.sh
 
-e2e_run: ## Run integration tests
-ifeq ($(BROWSER_STACK_USERNAME),)
-	@$(error BROWSER_STACK_USERNAME is not defined)
-endif
-ifeq ($(BROWSER_STACK_ACCESS_KEY),)
-	@$(error BROWSER_STACK_ACCESS_KEY is not defined)
-endif
-	@docker-compose run cocoa-maze-runner $(MAZE_ARGS) --tags 'not @skip' $(TEST_FEATURE)
-	
 #--------------------------------------------------------------------------
 # Release
 #
@@ -127,7 +156,7 @@ endif
 	# Prep GitHub release
 	# We could technically do a `hub release` here but a verification step
 	# before it goes live always seems like a good thing
-	@open 'https://github.com/bugsnag/bugsnag-cocoa/releases/new?tag=v$(PRESET_VERSION)&body='$$(awk 'start && /^## /{exit;};/^## /{start=1;next};start' CHANGELOG.md | hexdump -v -e '/1 "%02x"' | sed 's/\(..\)/%\1/g')
+	@open 'https://github.com/bugsnag/bugsnag-cocoa/releases/new?title=v$(PRESET_VERSION)&tag=v$(PRESET_VERSION)&body='$$(awk 'start && /^## /{exit;};/^## /{start=1;next};start' CHANGELOG.md | hexdump -v -e '/1 "%02x"' | sed 's/\(..\)/%\1/g')
 	# Workaround for CocoaPods/CocoaPods#8000
 	@EXPANDED_CODE_SIGN_IDENTITY="" EXPANDED_CODE_SIGN_IDENTITY_NAME="" EXPANDED_PROVISIONING_PROFILE="" pod trunk push --allow-warnings
 
@@ -141,13 +170,16 @@ endif
 	@sed -i '' "s/\"tag\": .*/\"tag\": \"v$(VERSION)\"/" Bugsnag.podspec.json
 	@sed -i '' "s/self.version = .*;/self.version = @\"$(VERSION)\";/" Bugsnag/Payload/BugsnagNotifier.m
 	@sed -i '' "s/## TBD/## $(VERSION) ($(shell date '+%Y-%m-%d'))/" CHANGELOG.md
+	@sed -i '' -E "s/[0-9]+.[0-9]+.[0-9]+/$(VERSION)/g" .jazzy.yaml
+	@agvtool new-marketing-version $(VERSION)
 
 prerelease: bump ## Generates a PR for the $VERSION release
 ifeq ($(VERSION),)
 	@$(error VERSION is not defined. Run with `make VERSION=number prerelease`)
 endif
 	@git checkout -b release-v$(VERSION)
-	@git add Bugsnag/Payload/BugsnagNotifier.m Bugsnag.podspec.json VERSION CHANGELOG.md
+	@git add Bugsnag/Payload/BugsnagNotifier.m Bugsnag.podspec.json VERSION CHANGELOG.md Framework/Info.plist Tests/Info.plist .jazzy.yaml
+	@git diff --exit-code || (echo "you have unstaged changes - Makefile may need updating to `git add` some more files"; exit 1)
 	@git commit -m "Release v$(VERSION)"
 	@git push origin release-v$(VERSION)
 	@hub pull-request -m "Release v$(VERSION)" --browse
@@ -157,16 +189,17 @@ endif
 #--------------------------------------------------------------------------
 
 clean: ## Clean build artifacts
+	@rm -rf .build $(DATA_PATH) compile_commands.json docs xcodebuild.log
 	@set -x && $(XCODEBUILD) $(BUILD_FLAGS) clean $(FORMATTER)
-	@rm -rf build-$(PLATFORM)
-	@rm -rf .build
 
 archive: build/Bugsnag-$(PLATFORM)-$(PRESET_VERSION).zip
 
-doc: ## Generate html documentation
-	@headerdoc2html -N -o docs $(shell ruby -e "require 'json'; print Dir.glob(JSON.parse(File.read('Bugsnag.podspec.json'))['public_header_files']).join(' ')") -j
-	@gatherheaderdoc docs
-	@mv docs/masterTOC.html docs/index.html
+docs: ## Generate or update HTML documentation
+	@rm -rf docs/*
+	@bundle exec jazzy
+ifneq ($(wildcard docs/.git),)
+	@cd docs && git add --all . && git commit -m "Docs update for $(PRESET_VERSION) release"
+endif
 
 help: ## Show help text
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

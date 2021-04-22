@@ -8,25 +8,13 @@
 
 #import <XCTest/XCTest.h>
 
-#import "BugsnagAppWithState.h"
-#import "BugsnagConfiguration.h"
+#import "BSG_KSSystemInfo.h"
+#import "BugsnagApp+Private.h"
+#import "BugsnagAppWithState+Private.h"
+#import "BugsnagConfiguration+Private.h"
 #import "BugsnagTestConstants.h"
 
-@interface BugsnagApp ()
-+ (BugsnagApp *)appWithDictionary:(NSDictionary *)event
-                           config:(BugsnagConfiguration *)config
-                     codeBundleId:(NSString *)codeBundleId;
-- (NSDictionary *)toDict;
-@end
-
-@interface BugsnagAppWithState ()
-+ (BugsnagAppWithState *)appWithDictionary:(NSDictionary *)event
-                                    config:(BugsnagConfiguration *)config
-                              codeBundleId:(NSString *)codeBundleId;
-+ (BugsnagAppWithState *)appWithOomData:(NSDictionary *)event;
-+ (BugsnagAppWithState *)appFromJson:(NSDictionary *)json;
-- (NSDictionary *)toDict;
-@end
+#include <sys/sysctl.h>
 
 @interface BugsnagAppTest : XCTestCase
 @property NSDictionary *data;
@@ -60,7 +48,7 @@
             }
     };
 
-    self.config = [[BugsnagConfiguration alloc] initWithApiKey:DUMMY_APIKEY_32CHAR_1];
+    self.config = [[BugsnagConfiguration alloc] initWithDictionaryRepresentation:self.data[@"user"][@"config"]];
     self.config.appType = @"iOS";
     self.config.bundleVersion = nil;
     self.config.appVersion = @"3.14.159";
@@ -133,34 +121,6 @@
     XCTAssertEqualObjects(@"5.6.3", dict[@"version"]);
 }
 
-- (void)testAppFromOOM {
-    NSDictionary *oomData = @{
-            @"id": @"com.example.foo.MyIosApp",
-            @"releaseStage": @"beta",
-            @"version": @"5.6.3",
-            @"bundleVersion": @"1",
-            @"codeBundleId": @"bundle-123",
-            @"inForeground": @YES,
-            @"type": @"iOS"
-    };
-
-    BugsnagAppWithState *app = [BugsnagAppWithState appWithOomData:oomData];
-
-    // verify stateful fields
-    XCTAssertNil(app.duration);
-    XCTAssertNil(app.durationInForeground);
-    XCTAssertTrue(app.inForeground);
-
-    // verify stateless fields
-    XCTAssertEqualObjects(@"1", app.bundleVersion);
-    XCTAssertEqualObjects(@"bundle-123", app.codeBundleId);
-    XCTAssertNil(app.dsymUuid);
-    XCTAssertEqualObjects(@"com.example.foo.MyIosApp", app.id);
-    XCTAssertEqualObjects(@"beta", app.releaseStage);
-    XCTAssertEqualObjects(@"iOS", app.type);
-    XCTAssertEqualObjects(@"5.6.3", app.version);
-}
-
 - (void)testAppFromJson {
     NSDictionary *json = @{
             @"duration": @7000,
@@ -202,16 +162,6 @@
     self.config.appVersion = @"4.2.6";
     app = [BugsnagAppWithState appWithDictionary:self.data config:self.config codeBundleId:self.codeBundleId];
     XCTAssertEqualObjects(@"4.2.6", app.version);
-
-    // 1st precedence is user.config.appVersion
-    NSMutableDictionary *data = [self.data mutableCopy];
-    data[@"user"] = @{
-            @"config": @{
-                    @"appVersion": @"1.2.3"
-            }
-    };
-    app = [BugsnagAppWithState appWithDictionary:data config:self.config codeBundleId:self.codeBundleId];
-    XCTAssertEqualObjects(@"1.2.3", app.version);
 }
 
 - (void)testBundleVersionPrecedence {
@@ -224,16 +174,24 @@
     self.config.bundleVersion = @"4.2.6";
     app = [BugsnagAppWithState appWithDictionary:self.data config:self.config codeBundleId:self.codeBundleId];
     XCTAssertEqualObjects(@"4.2.6", app.bundleVersion);
+}
 
-    // 1st precedence is user.config.bundleVersion
-    NSMutableDictionary *data = [self.data mutableCopy];
-    data[@"user"] = @{
-            @"config": @{
-                    @"bundleVersion": @"1.2.3"
-            }
-    };
-    app = [BugsnagAppWithState appWithDictionary:data config:self.config codeBundleId:self.codeBundleId];
-    XCTAssertEqualObjects(@"1.2.3", app.bundleVersion);
+- (void)testBSGParseAppMetadata {
+    NSDictionary *metadata = BSGParseAppMetadata(@{@"system": [BSG_KSSystemInfo systemInfo]});
+#if TARGET_CPU_ARM
+    XCTAssert([metadata[@"binaryArch"] hasPrefix:@"armv"]);
+#elif TARGET_CPU_ARM64
+    XCTAssert([metadata[@"binaryArch"] hasPrefix:@"arm64"]);
+#elif TARGET_CPU_X86
+    XCTAssert([metadata[@"binaryArch"] hasPrefix:@"x86"]);
+#elif TARGET_CPU_X86_64
+    XCTAssertEqualObjects(metadata[@"binaryArch"], @"x86_64");
+#endif
+    int proc_translated = 0;
+    size_t size = sizeof(proc_translated);
+    if (!sysctlbyname("sysctl.proc_translated", &proc_translated, &size, NULL, 0) && proc_translated) {
+        XCTAssertEqualObjects(metadata[@"runningOnRosetta"], @YES);
+    }
 }
 
 @end

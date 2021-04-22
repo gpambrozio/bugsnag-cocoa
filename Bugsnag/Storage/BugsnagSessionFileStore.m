@@ -4,19 +4,34 @@
 //
 
 #import "BugsnagSessionFileStore.h"
-#import "BSG_KSLogger.h"
+
+#import "BSGJSONSerialization.h"
+#import "BugsnagLogger.h"
+#import "BugsnagSession+Private.h"
 
 static NSString *const kSessionStoreSuffix = @"-Session-";
 
-@interface BugsnagSession ()
-- (NSDictionary *)toJson;
+@interface BugsnagSessionFileStore ()
+
+@property (nonatomic) NSUInteger maxPersistedSessions;
+
 @end
 
 @implementation BugsnagSessionFileStore
 
-+ (BugsnagSessionFileStore *)storeWithPath:(NSString *)path {
++ (BugsnagSessionFileStore *)storeWithPath:(NSString *)path
+                      maxPersistedSessions:(NSUInteger)maxPersistedSessions {
     return [[self alloc] initWithPath:path
-                       filenameSuffix:kSessionStoreSuffix];
+                 maxPersistedSessions:maxPersistedSessions];
+}
+
+- (instancetype) initWithPath:(NSString *)path
+         maxPersistedSessions:(NSUInteger)maxPersistedSessions {
+    if ((self = [super initWithPath:path
+                     filenameSuffix:kSessionStoreSuffix])) {
+        _maxPersistedSessions = maxPersistedSessions;
+    }
+    return self;
 }
 
 - (void)write:(BugsnagSession *)session {
@@ -25,12 +40,14 @@ static NSString *const kSessionStoreSuffix = @"-Session-";
     NSDictionary *dict = [session toJson];
 
     NSError *error;
-    NSData *json = [NSJSONSerialization dataWithJSONObject:dict options:0 error:&error];
+    NSData *json = [BSGJSONSerialization dataWithJSONObject:dict options:0 error:&error];
 
     if (error != nil || ![json writeToFile:filepath atomically:YES]) {
-        BSG_KSLOG_ERROR(@"Failed to write session %@", error);
+        bsg_log_err(@"Failed to write session %@", error);
         return;
     }
+    
+    [self pruneFilesLeaving:(int)self.maxPersistedSessions];
 }
 
 

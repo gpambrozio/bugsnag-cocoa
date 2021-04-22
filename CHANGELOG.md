@@ -1,9 +1,395 @@
 Changelog
 =========
 
-## TBD
+## 6.9.0 (2021-04-21)
+
+### Enhancements
+
+* App hangs that occur while the app is in the background will no longer be reported.
+  [#1075](https://github.com/bugsnag/bugsnag-cocoa/pull/1075)
+
+* Add `binaryArch` and `runningOnRosetta` to the `app` metadata tab.
+  [#1073](https://github.com/bugsnag/bugsnag-cocoa/pull/1073)
+
+* Bugsnag can now be used without AppKit, allowing use in daemons and other processes running in non-UI sessions.
+  [#1072](https://github.com/bugsnag/bugsnag-cocoa/pull/1072)
+
+## 6.8.4 (2021-04-14)
+
+### Enhancements
+
+* `macCatalystiOSVersion` is now reported for apps built with Mac Catalyst and iOS app running on Apple silicon.
+  [#1066](https://github.com/bugsnag/bugsnag-cocoa/pull/1066)
 
 ### Bug fixes
+
+* Fix crashes that could occur in `bsg_recordException` in low memory conditions.
+  [#1068](https://github.com/bugsnag/bugsnag-cocoa/pull/1068)
+
+* Fix a crash in `bsg_ksmachgetThreadQueueName`.
+  [#1065](https://github.com/bugsnag/bugsnag-cocoa/pull/1065)
+
+* Improve timestamp accuracy to fix breadcrumbs that are reported to occur after the error.
+  [#1062](https://github.com/bugsnag/bugsnag-cocoa/pull/1062)
+
+## 6.8.3 (2021-04-07)
+
+### Bug fixes
+
+* Catch exceptions thrown while preparing JSON for upload rather than crashing.
+  [#1063](https://github.com/bugsnag/bugsnag-cocoa/pull/1063)
+
+* Prevent app hangs being reported if a debugger is attached.
+  [#1058](https://github.com/bugsnag/bugsnag-cocoa/pull/1058)
+
+## 6.8.2 (2021-03-31)
+
+### Bug fixes
+
+* Enable `SUPPORTS_MACCATALYST` in main Xcode project.
+  [#1056](https://github.com/bugsnag/bugsnag-cocoa/pull/1056)
+
+* `osName` and `osVersion` now reflect the Mac's OS when running Mac Catalyst apps or iOS apps running on macOS.
+  Fix reporting of `model` for Mac Catalyst apps or iOS apps running on macOS.
+  [#1055](https://github.com/bugsnag/bugsnag-cocoa/pull/1055)
+
+* Uncaught exceptions thrown while handing UI events in iOS apps running on macOS are now detected.
+  [#1053](https://github.com/bugsnag/bugsnag-cocoa/pull/1053)
+
+## 6.8.1 (2021-03-24)
+
+### Bug fixes
+
+* Fix unreliable ordering of breadcrumbs.
+  [#1049](https://github.com/bugsnag/bugsnag-cocoa/pull/1049)
+
+## 6.8.0 (2021-03-18)
+
+### Enhancements
+
+* Bugsnag now detects app hangs (when the main thread is unresponsive for a period of time), alerting you of issues with your app’s responsiveness.
+  By default, only fatal app hangs (those that end with termination by the system watchdog or being force-quit by the user) will be reported.
+  This behaviour can be configured using the new  `appHangThresholdMillis` configuration option.
+  For more information see [the documentation](https://docs.bugsnag.com/platforms/ios/reporting-app-hangs/).
+  [#1039](https://github.com/bugsnag/bugsnag-cocoa/pull/1039)
+
+### Bug fixes
+
+* Fix a heap buffer overflow reported by Address Sanitizer.
+  [#1043](https://github.com/bugsnag/bugsnag-cocoa/pull/1043)
+
+* Fix parsing of `callStackSymbols` where the image name contains spaces.
+  [#1036](https://github.com/bugsnag/bugsnag-cocoa/pull/1036)
+
+* Fix a possible deadlock when writing crash reports for unhandled errors.
+  [#1034](https://github.com/bugsnag/bugsnag-cocoa/pull/1034)
+
+## 6.7.1 (2021-03-10)
+
+### Bug fixes
+
+* Fix `os_proc_available_memory` runtime link error on Mac Catalyst.
+  [#1025](https://github.com/bugsnag/bugsnag-cocoa/pull/1025)
+
+* Fix missing `osName` and `osVersion` for errors reported from app extensions that do not link against UIKit.
+  [#1022](https://github.com/bugsnag/bugsnag-cocoa/pull/1022)
+
+* Fix incorrect `freeMemory` for errors reported via `notify()`
+  [#1021](https://github.com/bugsnag/bugsnag-cocoa/pull/1021)
+
+## 6.7.0 (2021-03-03)
+
+### Enhancements
+
+* Bugsnag will now identify crashes that occur whilst your app is launching, allowing you to prioritize fixing high-impact launch crashes.
+  For more information see [the documentation](https://docs.bugsnag.com/platforms/ios/identifying-crashes-at-launch/).
+  [#1004](https://github.com/bugsnag/bugsnag-cocoa/pull/1004)
+
+### Bug fixes
+
+* Fix inaccurate `app.duration` after multiple calls to `notify()`
+  [#1014](https://github.com/bugsnag/bugsnag-cocoa/pull/1014)
+
+* Fix a possible deadlock when writing crash reports for unhandled errors.
+  [#1013](https://github.com/bugsnag/bugsnag-cocoa/pull/1013)
+
+### Deprecated
+
+* `Bugsnag.appDidCrashLastLaunch` has been deprecated in favour of `Bugsnag.lastRunInfo.crashed` and will be removed in the next major release.
+
+## 6.6.4 (2021-02-24)
+
+### Bug fixes
+
+* Fix possible deadlock when recording thread information for handled errors.
+  [#1011](https://github.com/bugsnag/bugsnag-cocoa/pull/1011)
+
+* Fix Swift 5.4 fatal error message parsing.
+  [#1010](https://github.com/bugsnag/bugsnag-cocoa/pull/1010)
+
+* Improve accuracy of jailbreak detection.
+  [#1000](https://github.com/bugsnag/bugsnag-cocoa/pull/1000)
+
+## 6.6.3 (2021-02-17)
+
+### Bug fixes
+
+* Fix hang after receiving signals in some cases.
+  [1002](https://github.com/bugsnag/bugsnag-cocoa/pull/1002)
+
+* Improve performance of thread recording for handled errors.
+  [#992](https://github.com/bugsnag/bugsnag-cocoa/pull/992)
+
+## 6.6.2 (2021-02-10)
+
+### Bug fixes
+
+* Fix a tvOS file permission error that was introduced in 6.5.1
+  [#996](https://github.com/bugsnag/bugsnag-cocoa/pull/996)
+* Fix an analyzer warning.
+  [#994](https://github.com/bugsnag/bugsnag-cocoa/pull/994)
+* Stop Bugsnag unregistering other signal handlers when catching a mach exception.
+  [#976](https://github.com/bugsnag/bugsnag-cocoa/pull/976)
+
+## 6.6.1 (2021-02-03)
+
+### Bug fixes
+
+* Fix compiler warnings when importing Bugsnag from Objective-C sources that do not use ARC.
+  [#985](https://github.com/bugsnag/bugsnag-cocoa/pull/985)
+* Fix a rare crash that could occur in the event of JSON parsing failures.
+  [#987](https://github.com/bugsnag/bugsnag-cocoa/pull/987)
+
+## 6.6.0 (2021-01-20)
+
+### Enhancements
+
+* The NSError's `userInfo` property is now included in reports.
+  [#974](https://github.com/bugsnag/bugsnag-cocoa/pull/974)
+
+## 6.5.1 (2021-01-13)
+
+### Bug fixes
+
+* Fix a regression where OOM events were missing session information.
+  [#963](https://github.com/bugsnag/bugsnag-cocoa/pull/963)
+
+* Make `maxPersistedEvents` and `maxPersistedSessions` comply with the specification, with defaults of 32 and 128 respectively.
+  [#966](https://github.com/bugsnag/bugsnag-cocoa/pull/966)
+
+## 6.5.0 (2021-01-06)
+
+### Enhancements
+
+* Errors may now be discarded based on their `errorClass` using the new `discardClasses` configuration option.
+  [#938](https://github.com/bugsnag/bugsnag-cocoa/pull/938)
+
+* The maxiumum number of persisted errors / events may now be configured using the new  `maxPersistedEvents` configuration option.
+  [#936](https://github.com/bugsnag/bugsnag-cocoa/pull/936)
+
+* The maxiumum number of persisted sessions may now be configured using the new  `maxPersistedSessions` configuration option.
+  [#943](https://github.com/bugsnag/bugsnag-cocoa/pull/943)
+
+* Bugsnag log messages are now prefixed with `[Bugsnag]` for easier searching & filtering.
+  [#955](https://github.com/bugsnag/bugsnag-cocoa/pull/955)
+
+### Bug fixes
+
+* Fix reliability of Swift fatal error message reporting.
+  [#948](https://github.com/bugsnag/bugsnag-cocoa/pull/948)
+
+## 6.4.1 (2020-12-14)
+
+### Bug fixes
+
+* Place "unhandledOverridden" inside "severityReason" instead of at the top level.
+  [937](https://github.com/bugsnag/bugsnag-cocoa/pull/937)
+
+## 6.4.0 (2020-12-08)
+
+### Enhancements
+
+* Allow overriding the "unhandled" flag in error callbacks.
+  [#921](https://github.com/bugsnag/bugsnag-cocoa/pull/921)
+  [#912](https://github.com/bugsnag/bugsnag-cocoa/pull/912)
+
+### Bug fixes
+
+* Fix unexpected exception behavior when started without an API key.
+  [#931](https://github.com/bugsnag/bugsnag-cocoa/pull/931)
+
+## 6.3.0 (2020-12-02)
+
+### Enhancements
+
+* Out Of Memory errors now include more information, including custom metadata and user information.
+  [#915](https://github.com/bugsnag/bugsnag-cocoa/pull/915)
+  [#908](https://github.com/bugsnag/bugsnag-cocoa/pull/908)
+
+* Bugsnag can now be used without UIKit, reducing memory usage in app extensions.
+  [#919](https://github.com/bugsnag/bugsnag-cocoa/pull/919)
+
+### Bug fixes
+
+* Fixed incorrect app version reported when sending crash reports from older versions of Bugsnag (before 6.2.3)
+  [#911](https://github.com/bugsnag/bugsnag-cocoa/pull/911)
+
+* Fixed a rare crash in -[BugsnagClient computeDidCrashLastLaunch]
+  [#917](https://github.com/bugsnag/bugsnag-cocoa/pull/917)
+
+## 6.2.6 (2020-11-25)
+
+### Bug fixes
+
+* Error and session deliveries that fail with an HTTP error status code will now be retried if appropriate.
+  [#895](https://github.com/bugsnag/bugsnag-cocoa/pull/895)
+
+* Fixed a rare crash in BugsnagClient's network connectivity observer block.
+  [#904](https://github.com/bugsnag/bugsnag-cocoa/pull/904)
+
+## 6.2.5 (2020-11-18)
+
+### Bug fixes
+
+* Fixed a rare crash due to a race condition in BugsnagSystemState.
+  [#893](https://github.com/bugsnag/bugsnag-cocoa/pull/893)
+  [#866](https://github.com/bugsnag/bugsnag-cocoa/issues/886)
+
+* Out Of Memory errors are no longer reported if a device reboot was detected.
+  [#822](https://github.com/bugsnag/bugsnag-cocoa/pull/882)
+  [#545](https://github.com/bugsnag/bugsnag-cocoa/issues/545)
+
+## 6.2.4 (2020-11-04)
+
+### Bug fixes
+
+* The `onCrashHandler` is no longer called in the event of an OOM.
+  [#874](https://github.com/bugsnag/bugsnag-cocoa/pull/874)
+
+## 6.2.3 (2020-10-28)
+
+### Enhancements
+
+* Use os_proc_available_memory() to get free memory, if available.
+  [#851](https://github.com/bugsnag/bugsnag-cocoa/pull/851)
+
+* Reduced the CPU and memory impact of leaving breadcrumbs.
+  [#853](https://github.com/bugsnag/bugsnag-cocoa/pull/853)
+  [#863](https://github.com/bugsnag/bugsnag-cocoa/pull/863)
+
+### Bug fixes
+
+* Fix for incorrect version info during edge case where version info is not
+  manually set, and app version is changed between crashing and reporting the error.
+  [#862](https://github.com/bugsnag/bugsnag-cocoa/pull/862)
+
+* Catch and report unexpected exceptions when (de)serializing JSON data rather
+  than crashing.
+  [#856](https://github.com/bugsnag/bugsnag-cocoa/pull/856)
+
+## 6.2.2 (2020-10-21)
+
+### Enhancements
+
+* Support "foreground" duration in MacOS as well.
+  [#848](https://github.com/bugsnag/bugsnag-cocoa/pull/848)
+
+* Timestamp accuracy in reports has been increased from seconds to milliseconds.
+  [#847](https://github.com/bugsnag/bugsnag-cocoa/pull/847)
+
+* Calculation of "foreground" duration now also includes time in
+  UIApplicationStateActive and UIApplicationStateInactive states in order to
+  match Apple's definition of "foreground".
+  [#839](https://github.com/bugsnag/bugsnag-cocoa/pull/839)
+
+## 6.2.1 (2020-10-15)
+
+### Bug fixes
+
+* Changed synchronization method when responding to dynamic library image events
+  to a dispatch queue, which is a more bulletproof and battle-hardened approach.
+  [#837](https://github.com/bugsnag/bugsnag-cocoa/pull/837)
+
+* Fixed a deadlock which can occur when calling `notify`
+  [#833](https://github.com/bugsnag/bugsnag-cocoa/pull/833)
+
+## 6.2.0 (2020-10-07)
+
+### Enhancements
+
+* An invalid or missing API key now causes an NSException to be thrown upon
+  calling [Bugsnag start]. This check used to occur during configuration,
+  and only for malformed API keys.
+  [#828](https://github.com/bugsnag/bugsnag-cocoa/pull/828)
+
+* Exception Mach code and subcode are now written to the crash report as
+  stringified hex values instead of integers to avoid potential data loss from
+  JSON readers that lose the lower bits from unsigned 64-bit numbers.
+  [#827](https://github.com/bugsnag/bugsnag-cocoa/pull/827)
+
+* Improved out-of-memory event detection by disabling reporting when a debugger
+  is attached. OOM reporting is now enabled by default in debug builds.
+  [#820](https://github.com/bugsnag/bugsnag-cocoa/pull/820)
+
+## 6.1.7 (2020-10-01)
+
+### Bug fixes
+
+* Re-enabled the `Require Only App-Extension-Safe API` build setting
+  [#823](https://github.com/bugsnag/bugsnag-cocoa/pull/823)
+
+* Fix reporting of events with more than one error
+  [#821](https://github.com/bugsnag/bugsnag-cocoa/pull/821)
+
+## 6.1.6 (2020-09-24)
+
+### Bug fixes
+
+* Fix crash-on-launch (attempt to insert into immutable dictionary).
+  [#819](https://github.com/bugsnag/bugsnag-cocoa/pull/819)
+
+## 6.1.5 (2020-09-23)
+
+### Enhancements
+
+* Add `+[Bugsnag breadcrumbs]` to allow apps to fetch the list of breadcrumbs.
+  [#813](https://github.com/bugsnag/bugsnag-cocoa/pull/813)
+
+* Disable JSON pretty-printing in KSCrash reports to save disk space and bandwidth.
+  [#802](https://github.com/bugsnag/bugsnag-cocoa/pull/802)
+
+### Bug fixes
+
+* Fix reporting of Mach exception code and subcode.
+  [#806](https://github.com/bugsnag/bugsnag-cocoa/pull/806)
+
+* Create date formatters at init time to avoid potential race conditions.
+  [#807](https://github.com/bugsnag/bugsnag-cocoa/pull/807)
+
+* Refactor OOM handler to be less suceptible to data loss on crash.
+  [#804](https://github.com/bugsnag/bugsnag-cocoa/pull/804)
+
+## 6.1.4 (2020-09-11)
+
+### Bug fixes
+
+* Copy the metadata observer list rather than mutating it directly.
+  [#796](https://github.com/bugsnag/bugsnag-cocoa/pull/796)
+
+* Reorganized the project file
+  [#793](https://github.com/bugsnag/bugsnag-cocoa/pull/793)
+
+* Removed some magic values and used the const string references instead.
+  [#792](https://github.com/bugsnag/bugsnag-cocoa/pull/792)
+
+* Added BSGJSONSerializer, which ensures no exceptions get thrown (NSErrors get returned instead)
+  [#791](https://github.com/bugsnag/bugsnag-cocoa/pull/791)
+
+* Guard against non-string metadata map keys
+  [#790](https://github.com/bugsnag/bugsnag-cocoa/pull/790)
+
+* Quiet some Analyzer false positives
+  [#789](https://github.com/bugsnag/bugsnag-cocoa/pull/789)
 
 * Avoid crash reporting OOMs if nil provided as codeBundleId
   [#784](https://github.com/bugsnag/bugsnag-cocoa/pull/784)

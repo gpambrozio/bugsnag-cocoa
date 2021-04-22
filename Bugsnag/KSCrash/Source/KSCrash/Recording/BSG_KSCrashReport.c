@@ -43,6 +43,8 @@
 #include "BSG_KSCrashContext.h"
 #include "BSG_KSCrashSentry.h"
 
+#include <sys/time.h>
+
 #ifdef __arm64__
 #include <sys/_types/_ucontext64.h>
 #define BSG_UC_MCONTEXT uc_mcontext64
@@ -143,8 +145,7 @@ void bsg_kscrw_i_addIntegerElement(const BSG_KSCrashReportWriter *const writer,
 void bsg_kscrw_i_addUIntegerElement(const BSG_KSCrashReportWriter *const writer,
                                     const char *const key,
                                     const unsigned long long value) {
-    bsg_ksjsonaddIntegerElement(bsg_getJsonContext(writer), key,
-                                (long long)value);
+    bsg_ksjsonaddUIntegerElement(bsg_getJsonContext(writer), key, value);
 }
 
 void bsg_kscrw_i_addStringElement(const BSG_KSCrashReportWriter *const writer,
@@ -433,8 +434,7 @@ uintptr_t *bsg_kscrw_i_getBacktrace(
     if (thread == crash->offendingThread) {
         if (crash->stackTrace != NULL && crash->stackTraceLength > 0 &&
             (crash->crashType &
-             (BSG_KSCrashTypeCPPException | BSG_KSCrashTypeNSException |
-              BSG_KSCrashTypeUserReported))) {
+             (BSG_KSCrashTypeCPPException | BSG_KSCrashTypeNSException))) {
             *backtraceLength = crash->stackTraceLength;
             return crash->stackTrace;
         }
@@ -522,11 +522,6 @@ void bsg_kscrw_i_logCrashType(
         const char *sigCodeName = bsg_kssignal_signalCodeName(sigNum, sigCode);
         BSG_KSLOGBASIC_INFO("App crashed due to signal: [%s, %s] at %08x",
                             sigName, sigCodeName, sentryContext->faultAddress);
-        break;
-    }
-    case BSG_KSCrashTypeUserReported: {
-        BSG_KSLOG_INFO("App crashed due to user specified exception: %s",
-                       sentryContext->crashReason);
         break;
     }
     }
@@ -634,10 +629,6 @@ bool bsg_kscrw_i_exceedsBufferLen(const size_t length);
 
 void bsg_kscrashreport_writeKSCrashFields(BSG_KSCrash_Context *crashContext, BSG_KSCrashReportWriter *writer);
 
-void bsg_kscrashreport_writeBugsnagPayload(const BSG_KSCrash_Context *crashContext, const BSG_KSCrashReportWriter *writer);
-
-void bsg_kscrashreport_writeOverrides(const BSG_KSCrash_Context *crashContext, const BSG_KSCrashReportWriter *writer);
-
 /** Write the contents of a memory location.
  * Also writes meta information about the data.
  *
@@ -744,19 +735,21 @@ void bsg_kscrw_i_writeBacktraceEntry(
     const uintptr_t address, const Dl_info *const info) {
     writer->beginObject(writer, key);
     {
-        if (info->dli_fname != NULL) {
-            writer->addStringElement(writer, BSG_KSCrashField_ObjectName,
-                                     bsg_ksfulastPathEntry(info->dli_fname));
+        if (info->dli_saddr != NULL) {
+            if (info->dli_fname != NULL) {
+                writer->addStringElement(writer, BSG_KSCrashField_ObjectName,
+                                         bsg_ksfulastPathEntry(info->dli_fname));
+            }
+            writer->addUIntegerElement(writer, BSG_KSCrashField_ObjectAddr,
+                                       (uintptr_t)info->dli_fbase);
+            if (info->dli_sname != NULL) {
+                const char *sname = info->dli_sname;
+                writer->addStringElement(writer, BSG_KSCrashField_SymbolName,
+                                         sname);
+            }
+            writer->addUIntegerElement(writer, BSG_KSCrashField_SymbolAddr,
+                                       (uintptr_t)info->dli_saddr);
         }
-        writer->addUIntegerElement(writer, BSG_KSCrashField_ObjectAddr,
-                                   (uintptr_t)info->dli_fbase);
-        if (info->dli_sname != NULL) {
-            const char *sname = info->dli_sname;
-            writer->addStringElement(writer, BSG_KSCrashField_SymbolName,
-                                     sname);
-        }
-        writer->addUIntegerElement(writer, BSG_KSCrashField_SymbolAddr,
-                                   (uintptr_t)info->dli_saddr);
         writer->addUIntegerElement(writer, BSG_KSCrashField_InstructionAddr,
                                    address);
     }
@@ -966,6 +959,27 @@ void bsg_kscrw_i_writeNotableAddresses(
     writer->endContainer(writer);
 }
 
+/** Write the message from the `__crash_info` Mach section into the report.
+ *
+ * @param writer The writer.
+ *
+ * @param key The object key.
+ *
+ * @param address The address of the first frame in the backtrace.
+ */
+void bsg_kscrw_i_writeCrashInfoMessage(const BSG_KSCrashReportWriter *const writer,
+                                       const char *key, uintptr_t address) {
+    BSG_Mach_Header_Info *image = bsg_mach_headers_image_at_address(address);
+    if (!image) {
+        BSG_KSLOG_ERROR("Could not locate mach header info");
+        return;
+    }
+    const char *message = bsg_mach_headers_get_crash_info_message(image);
+    if (message) {
+        writer->addStringElement(writer, key, message);
+    }
+}
+
 /** Write information about a thread to the report.
  *
  * @param writer The writer.
@@ -1021,6 +1035,10 @@ void bsg_kscrw_i_writeThread(const BSG_KSCrashReportWriter *const writer,
                 bsg_kscrw_i_writeNotableAddresses(
                     writer, BSG_KSCrashField_NotableAddresses, machineContext);
             }
+        }
+        if (isCrashedThread && backtrace && backtraceLength) {
+            bsg_kscrw_i_writeCrashInfoMessage(writer, BSG_KSCrashField_CrashInfoMessage,
+                                              backtrace[0]);
         }
     }
     writer->endContainer(writer);
@@ -1181,8 +1199,8 @@ void bsg_kscrw_i_writeError(const BSG_KSCrashReportWriter *const writer,
                             const char *const key,
                             const BSG_KSCrash_SentryContext *const crash) {
     int machExceptionType = 0;
-    kern_return_t machCode = 0;
-    kern_return_t machSubCode = 0;
+    int64_t machCode = 0;
+    int64_t machSubCode = 0;
     int sigNum = 0;
     int sigCode = 0;
     const char *exceptionName = NULL;
@@ -1192,14 +1210,14 @@ void bsg_kscrw_i_writeError(const BSG_KSCrashReportWriter *const writer,
     switch (crash->crashType) {
     case BSG_KSCrashTypeMachException:
         machExceptionType = crash->mach.type;
-        machCode = (kern_return_t)crash->mach.code;
+        machCode = crash->mach.code;
         if (machCode == KERN_PROTECTION_FAILURE && crash->isStackOverflow) {
             // A stack overflow should return KERN_INVALID_ADDRESS, but
             // when a stack blasts through the guard pages at the top of the
             // stack, it generates KERN_PROTECTION_FAILURE. Correct for this.
             machCode = KERN_INVALID_ADDRESS;
         }
-        machSubCode = (kern_return_t)crash->mach.subcode;
+        machSubCode = crash->mach.subcode;
 
         sigNum =
             bsg_kssignal_signalForMachException(machExceptionType, machCode);
@@ -1221,26 +1239,18 @@ void bsg_kscrw_i_writeError(const BSG_KSCrashReportWriter *const writer,
         sigCode = crash->signal.signalInfo->si_code;
         machExceptionType = bsg_kssignal_machExceptionForSignal(sigNum);
         break;
-    case BSG_KSCrashTypeUserReported:
-        machExceptionType = EXC_CRASH;
-        sigNum = SIGABRT;
-        crashReason = crash->crashReason;
-        break;
     }
 
     const char *machExceptionName = bsg_ksmachexceptionName(machExceptionType);
-    const char *machCodeName =
-        machCode == 0 ? NULL : bsg_ksmachkernelReturnCodeName(machCode);
+    const char *machCodeName = machCode == 0 ? NULL :
+        bsg_ksmachkernelReturnCodeName((kern_return_t)machCode);
     const char *sigName = bsg_kssignal_signalName(sigNum);
     const char *sigCodeName = bsg_kssignal_signalCodeName(sigNum, sigCode);
 
     writer->beginObject(writer, key);
     {
-
-        if (BSG_KSCrashTypeUserReported != crash->crashType) {
-            writer->addUIntegerElement(writer, BSG_KSCrashField_Address,
-                                       crash->faultAddress);
-        }
+        writer->addUIntegerElement(writer, BSG_KSCrashField_Address,
+                                   crash->faultAddress);
 
         if (crashReason != NULL) {
             writer->addStringElement(writer, BSG_KSCrashField_Reason,
@@ -1253,20 +1263,25 @@ void bsg_kscrw_i_writeError(const BSG_KSCrashReportWriter *const writer,
         case BSG_KSCrashTypeMachException:
             writer->beginObject(writer, BSG_KSCrashField_Mach);
             {
+                char buffer[20] = {0};
+                
                 writer->addUIntegerElement(writer, BSG_KSCrashField_Exception,
                                            (unsigned)machExceptionType);
                 if (machExceptionName != NULL) {
                     writer->addStringElement(writer, BSG_KSCrashField_ExceptionName,
                                              machExceptionName);
                 }
-                writer->addUIntegerElement(writer, BSG_KSCrashField_Code,
-                                           (unsigned)machCode);
+                
+                snprintf(buffer, sizeof(buffer), "0x%llx", machCode);
+                writer->addStringElement(writer, BSG_KSCrashField_Code, buffer);
+                
                 if (machCodeName != NULL) {
                     writer->addStringElement(writer, BSG_KSCrashField_CodeName,
                                              machCodeName);
                 }
-                writer->addUIntegerElement(writer, BSG_KSCrashField_Subcode,
-                                           (unsigned)machSubCode);
+                
+                snprintf(buffer, sizeof(buffer), "0x%llx", machSubCode);
+                writer->addStringElement(writer, BSG_KSCrashField_Subcode, buffer);
             }
             writer->endContainer(writer);
             writer->addStringElement(writer, BSG_KSCrashField_Type,
@@ -1317,18 +1332,6 @@ void bsg_kscrw_i_writeError(const BSG_KSCrashReportWriter *const writer,
             writer->addStringElement(writer, BSG_KSCrashField_Type,
                                      BSG_KSCrashExcType_Signal);
             break;
-
-        case BSG_KSCrashTypeUserReported: {
-            writer->addStringElement(writer, BSG_KSCrashField_Type,
-                                     BSG_KSCrashExcType_User);
-            writer->beginObject(writer, BSG_KSCrashField_UserReported);
-            {
-                writer->addStringElement(writer, BSG_KSCrashField_Name,
-                                         crash->userException.name);
-            }
-            writer->endContainer(writer);
-            break;
-        }
         }
     }
     writer->endContainer(writer);
@@ -1347,8 +1350,6 @@ void bsg_kscrw_i_writeAppStats(const BSG_KSCrashReportWriter *const writer,
                                BSG_KSCrash_State *state) {
     writer->beginObject(writer, key);
     {
-        writer->addBooleanElement(writer, BSG_KSCrashField_AppActive,
-                                  state->applicationIsActive);
         writer->addBooleanElement(writer, BSG_KSCrashField_AppInFG,
                                   state->applicationIsInForeground);
 
@@ -1358,7 +1359,7 @@ void bsg_kscrw_i_writeAppStats(const BSG_KSCrashReportWriter *const writer,
                                   state->sessionsSinceLastCrash);
         writer->addFloatingPointElement(writer,
                                         BSG_KSCrashField_ActiveTimeSinceCrash,
-                                        state->activeDurationSinceLastCrash);
+                                        state->foregroundDurationSinceLastCrash);
         writer->addFloatingPointElement(
             writer, BSG_KSCrashField_BGTimeSinceCrash,
             state->backgroundDurationSinceLastCrash);
@@ -1367,7 +1368,7 @@ void bsg_kscrw_i_writeAppStats(const BSG_KSCrashReportWriter *const writer,
                                   state->sessionsSinceLaunch);
         writer->addFloatingPointElement(writer,
                                         BSG_KSCrashField_ActiveTimeSinceLaunch,
-                                        state->activeDurationSinceLaunch);
+                                        state->foregroundDurationSinceLaunch);
         writer->addFloatingPointElement(writer,
                                         BSG_KSCrashField_BGTimeSinceLaunch,
                                         state->backgroundDurationSinceLaunch);
@@ -1412,6 +1413,14 @@ void bsg_kscrw_i_writeReportInfo(const BSG_KSCrashReportWriter *const writer,
                                  processName);
         writer->addIntegerElement(writer, BSG_KSCrashField_Timestamp,
                                   time(NULL));
+        // gettimeofday() is not documented async-signal safe in the sigaction
+        // man page, but times() is and its implementation calls gettimeofday()
+        // so it's reasonable to assume that it is in fact safe.
+        struct timeval t;
+        if (!gettimeofday(&t, NULL)) {
+            writer->addIntegerElement(writer, BSG_KSCrashField_Timestamp_Millis,
+                                      t.tv_sec * 1000 + t.tv_usec / 1000);
+        }
         writer->addStringElement(writer, BSG_KSCrashField_Type, type);
     }
     writer->endContainer(writer);
@@ -1478,7 +1487,7 @@ void bsg_kscrw_i_updateStackOverflowStatus(
 void bsg_kscrw_i_callUserCrashHandler(BSG_KSCrash_Context *const crashContext,
                                       BSG_KSCrashReportWriter *writer) {
     BSG_KSCrashType type = crashContext->crash.crashType;
-    crashContext->config.onCrashNotify(writer, type);
+    crashContext->config.onCrashNotify(writer, (int)type);
 }
 
 // ============================================================================
@@ -1504,7 +1513,7 @@ void bsg_kscrashreport_writeMinimalReport(
     BSG_KSCrashReportWriter *writer = &concreteWriter;
     bsg_kscrw_i_prepareReportWriter(writer, &jsonContext);
 
-    bsg_ksjsonbeginEncode(bsg_getJsonContext(writer), true,
+    bsg_ksjsonbeginEncode(bsg_getJsonContext(writer), false,
                           bsg_kscrw_i_addJSONData, &fd);
 
     writer->beginObject(writer, BSG_KSCrashField_Report);
@@ -1551,12 +1560,8 @@ void bsg_kscrashreport_writeStandardReport(
     BSG_KSCrashReportWriter *writer = &concreteWriter;
     bsg_kscrw_i_prepareReportWriter(writer, &jsonContext);
 
-    bsg_ksjsonbeginEncode(bsg_getJsonContext(writer), true,
+    bsg_ksjsonbeginEncode(bsg_getJsonContext(writer), false,
                           bsg_kscrw_i_addJSONData, &fd);
-
-    // KSCrash report fields are not required for handled errors as
-    // they serialize info in the bugsnag payload JSON schema instead.
-    bool recordKSCrashFields = crashContext->crash.userException.eventOverrides == NULL;
 
     writer->beginObject(writer, BSG_KSCrashField_Report);
     {
@@ -1564,27 +1569,14 @@ void bsg_kscrashreport_writeStandardReport(
                 writer, BSG_KSCrashField_Report, BSG_KSCrashReportType_Standard,
                 crashContext->config.crashID, crashContext->config.processName);
 
-        if (recordKSCrashFields) {
-            bsg_kscrashreport_writeKSCrashFields(crashContext, writer);
-        }
+        bsg_kscrashreport_writeKSCrashFields(crashContext, writer);
 
         if (crashContext->config.onCrashNotify != NULL) {
-            // NOTE: The blacklist for BSG_KSCrashField_UserAtCrash children in BugsnagEvent.m
+            // NOTE: The deny list for BSG_KSCrashField_UserAtCrash children in BugsnagEvent.m
             // should be updated when adding new fields here
 
             // Write handled exception report info
             writer->beginObject(writer, BSG_KSCrashField_UserAtCrash);
-            if (crashContext->crash.crashType == BSG_KSCrashTypeUserReported) {
-                if (crashContext->crash.userException.overrides != NULL) {
-                    writer->addJSONElement(writer, BSG_KSCrashField_Overrides,
-                            crashContext->crash.userException.overrides);
-                }
-                if (recordKSCrashFields) {
-                    bsg_kscrashreport_writeOverrides(crashContext, writer);
-                } else {
-                    bsg_kscrashreport_writeBugsnagPayload(crashContext, writer);
-                }
-            }
             { bsg_kscrw_i_callUserCrashHandler(crashContext, writer); }
             writer->endContainer(writer);
         }
@@ -1594,36 +1586,6 @@ void bsg_kscrashreport_writeStandardReport(
     bsg_ksjsonendEncode(bsg_getJsonContext(writer));
 
     close(fd);
-}
-
-void bsg_kscrashreport_writeBugsnagPayload(const BSG_KSCrash_Context *crashContext,
-                                           const BSG_KSCrashReportWriter *writer) {
-    if (crashContext->crash.userException.eventOverrides != NULL) {
-        writer->addJSONElement(writer, BSG_KSCrashField_EventJson,
-                crashContext->crash.userException.eventOverrides);
-    }
-}
-
-void bsg_kscrashreport_writeOverrides(const BSG_KSCrash_Context *crashContext,
-                                      const BSG_KSCrashReportWriter *writer) {
-    if (crashContext->crash.userException.handledState != NULL) {
-        writer->addJSONElement(writer, BSG_KSCrashField_HandledState,
-                crashContext->crash.userException.handledState);
-    }
-    if (crashContext->crash.userException.metadata != NULL) {
-        writer->addJSONElement(writer, BSG_KSCrashField_Metadata,
-                crashContext->crash.userException.metadata);
-    }
-    if (crashContext->crash.userException.state != NULL) {
-        writer->addJSONElement(writer, BSG_KSCrashField_State,
-                crashContext->crash.userException.state);
-    }
-    if (crashContext->crash.userException.config != NULL) {
-        writer->addJSONElement(writer, BSG_KSCrashField_Config,
-                crashContext->crash.userException.config);
-    }
-    writer->addIntegerElement(writer, BSG_KSCrashField_DiscardDepth,
-            crashContext->crash.userException.discardDepth);
 }
 
 void bsg_kscrashreport_writeKSCrashFields(BSG_KSCrash_Context *crashContext, BSG_KSCrashReportWriter *writer) {
@@ -1655,55 +1617,11 @@ void bsg_kscrashreport_logCrash(const BSG_KSCrash_Context *const crashContext) {
     bsg_kscrw_i_logCrashThreadBacktrace(&crashContext->crash);
 }
 
-int bsg_kscrw_i_collectJsonData(const char *const data, const size_t length, void *const userData) {
-    BSG_ThreadDataBuffer *thread_data = (BSG_ThreadDataBuffer *)userData;
-    if (thread_data->data == NULL) {
-        // Allocate initial memory for JSON data
-        void *ptr = malloc(BSG_THREAD_DATA_SIZE_INITIAL);
-        if (ptr != NULL) {
-            thread_data->data = ptr;
-            *thread_data->data = '\0';
-            thread_data->allocated_size = BSG_THREAD_DATA_SIZE_INITIAL;
-        } else { // failed to allocate enough memory - abandon collection
-            return BSG_KSJSON_ERROR_CANNOT_ADD_DATA;
-        }
-    }
-    while (strlen(thread_data->data) + length >= thread_data->allocated_size) {
-        // Expand memory to hold further data
-        void *ptr = realloc(thread_data->data, thread_data->allocated_size + BSG_THREAD_DATA_SIZE_INCREMENT);
-        if (ptr != NULL) {
-            thread_data->data = ptr;
-            thread_data->allocated_size += BSG_THREAD_DATA_SIZE_INCREMENT;
-        } else { // failed to allocate enough memory - abandon collection
-            return BSG_KSJSON_ERROR_CANNOT_ADD_DATA;
-        }
-    }
-    strncat(thread_data->data, data, length);
-    return BSG_KSJSON_OK;
-}
-
-char *bsg_kscrw_i_captureThreadTrace(const BSG_KSCrash_Context *crashContext) {
-    BSG_KSJSONEncodeContext jsonContext;
-    BSG_KSCrashReportWriter concreteWriter;
-    BSG_KSCrashReportWriter *writer = &concreteWriter;
-    bsg_kscrw_i_prepareReportWriter(writer, &jsonContext);
-    BSG_ThreadDataBuffer userData = { NULL, 0 };
-    bsg_ksjsonbeginEncode(bsg_getJsonContext(writer), false, bsg_kscrw_i_collectJsonData, &userData);
-    writer->beginObject(writer, BSG_KSCrashField_Report);
-    bsg_kscrw_i_writeTraceInfo(crashContext, writer);
-    writer->endContainer(writer);
-    bsg_ksjsonendEncode(bsg_getJsonContext(writer));
-    return userData.data;
-}
-
 void bsg_kscrw_i_writeTraceInfo(const BSG_KSCrash_Context *crashContext,
                                 const BSG_KSCrashReportWriter *writer) {
     const BSG_KSCrash_SentryContext *crash = &crashContext->crash;
 
-    // Don't write the binary images for user reported crashes to improve performance
-    if (crash->writeBinaryImagesForUserReported == true || crash->crashType != BSG_KSCrashTypeUserReported) {
-        bsg_kscrw_i_writeBinaryImages(writer, BSG_KSCrashField_BinaryImages);
-    }
+    bsg_kscrw_i_writeBinaryImages(writer, BSG_KSCrashField_BinaryImages);
     writer->beginObject(writer, BSG_KSCrashField_Crash);
     {
         bsg_kscrw_i_writeAllThreads(writer, BSG_KSCrashField_Threads, crash,

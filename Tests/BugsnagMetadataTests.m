@@ -8,7 +8,7 @@
 
 #import <XCTest/XCTest.h>
 #import "BugsnagMetadata.h"
-#import "BugsnagMetadataInternal.h"
+#import "BugsnagMetadata+Private.h"
 
 // MARK: - Expose tested-class internals
 
@@ -102,7 +102,7 @@
     XCTAssertFalse(delegateCalled, "Did not expect the delegate's metadataChanged: method to be called.");
     
     // Again, add valid value
-    [metadata addMetadata:@"aValue" withKey:@"foo" toSection:@"FirstTab"];
+    [metadata addMetadata:@"aValue" withKey:@"bar" toSection:@"FirstTab"];
     tab2 = [[metadata getMetadataFromSection:@"FirstTab"] mutableCopy];
     XCTAssertNotNil(tab2);
     XCTAssertEqual(tab2.count, 1);
@@ -111,7 +111,7 @@
     delegateCalled = NO;
     [metadata addMetadata:nil withKey:@"bar" toSection:@"FirstTab"];
     tab2 = [[metadata getMetadataFromSection:@"FirstTab"] mutableCopy];
-    XCTAssertEqual(tab2.count, 1);
+    XCTAssertEqual(tab2.count, 0);
     XCTAssertTrue(delegateCalled, "Expected the delegate's metadataChanged: method to be called.");
 }
 
@@ -178,6 +178,10 @@
     dummyObj.name = @"aName";
     
     [metadata addMetadata:@{dummyObj : @"someValue"} toSection:@"invalidKeyTab"];
+    XCTAssertEqual(metadata.dictionary.count, 0);
+    XCTAssertFalse(delegateCalled);
+    
+    [metadata addMetadata:@{@123 : @"Numeric key is invalid"} toSection:@"invalidKeyTab"];
     XCTAssertEqual(metadata.dictionary.count, 0);
     XCTAssertFalse(delegateCalled);
     
@@ -269,8 +273,7 @@
                     @"bar": @YES
             }
     }];
-    XCTAssertEqual(1, [metadata.dictionary count]);
-    XCTAssertTrue([metadata getMetadataFromSection:@"foo" withKey:@"bar"]);
+    XCTAssertEqualObjects(metadata.dictionary, @{@"foo": @{@"bar": @YES}});
 }
 
 - (void)testSanitizeSectionValue {
@@ -322,6 +325,71 @@
     NSArray *bar = [metadata getMetadataFromSection:@"foo" withKey:@"bar"];
     NSDictionary *nestedDict = bar[0][0];
     XCTAssertEqual(0, [nestedDict count]);
+}
+
+- (void)testConcurrentObserverAccess {
+    BugsnagMetadata *metadata = [[BugsnagMetadata alloc] initWithDictionary:@{
+            @"foo": @{
+                    @"bar": @[
+                            @[
+                                    @{ @"custom": [NSNull null] }
+                            ]
+                    ]
+            }
+    }];
+
+    BugsnagObserverBlock firstObserver = ^(BugsnagStateEvent *_Nonnull event){};
+    BugsnagObserverBlock secondObserver = ^(BugsnagStateEvent *_Nonnull event){};
+
+    [metadata addObserverWithBlock:firstObserver];
+    
+    __block bool threadShouldQuit = false;
+    if (@available(iOS 10.0, tvOS 10.0, macOS 10.12, *)) {
+        [NSThread detachNewThreadWithBlock:^{
+            while(!threadShouldQuit) {
+                [metadata addObserverWithBlock:secondObserver];
+                [metadata removeObserverWithBlock:secondObserver];
+            }
+        }];
+    } else {
+        // Fallback on earlier versions
+    }
+
+    for(int i = 0; i < 10000; i++) {
+        [metadata addMetadata:[NSNumber numberWithInt:i] withKey:@"bar" toSection:@"foo"];
+    }
+    threadShouldQuit = true;
+}
+
+- (void)testObserverNotCalledIfMetadataNotChanged {
+    BugsnagMetadata *metadata = [[BugsnagMetadata alloc] initWithDictionary:@{}];
+    
+    __block BOOL didCallObserver = NO;
+    BugsnagObserverBlock observer = ^(BugsnagStateEvent *event) {
+        didCallObserver = YES;
+    };
+    
+    [metadata addObserverWithBlock:observer];
+    
+    didCallObserver = NO;
+    [metadata addMetadata:@{@"foo": @"bar"} toSection:@"foo"];
+    XCTAssertTrue(didCallObserver, @"Observer should be called if metadata has changed");
+    XCTAssertEqualObjects([metadata getMetadataFromSection:@"foo"], @{@"foo": @"bar"});
+    
+    didCallObserver = NO;
+    [metadata addMetadata:@{@"foo": @"bar"} toSection:@"foo"];
+    XCTAssertFalse(didCallObserver, @"Observer should not be called if metadata has not changed");
+    XCTAssertEqualObjects([metadata getMetadataFromSection:@"foo"], @{@"foo": @"bar"});
+    
+    didCallObserver = NO;
+    [metadata addMetadata:@{@"foo": @"baz"} toSection:@"foo"];
+    XCTAssertTrue(didCallObserver, @"Observer should be called if metadata has changed");
+    XCTAssertEqualObjects([metadata getMetadataFromSection:@"foo"], @{@"foo": @"baz"});
+    
+    didCallObserver = NO;
+    [metadata addMetadata:@{@"foo": @"baz", [NSNull null]: @""} toSection:@"foo"];
+    XCTAssertFalse(didCallObserver, @"Observer should not be called if metadata has not changed");
+    XCTAssertEqualObjects([metadata getMetadataFromSection:@"foo"], @{@"foo": @"baz"});
 }
 
 @end

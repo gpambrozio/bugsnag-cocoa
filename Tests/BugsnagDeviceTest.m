@@ -7,30 +7,10 @@
 //
 
 #import <XCTest/XCTest.h>
-#import "BugsnagConfiguration.h"
-#import "BugsnagDeviceWithState.h"
-#import "BugsnagDevice.h"
-#import "BugsnagTestConstants.h"
 
-NSNumber *BSGDeviceFreeSpace(NSSearchPathDirectory directory);
-
-@interface BugsnagDevice ()
-+ (BugsnagDevice *)deviceWithDictionary:(NSDictionary *)event;
-
-- (NSDictionary *)toDictionary;
-
-- (void)appendRuntimeInfo:(NSDictionary *)info;
-@end
-
-@interface BugsnagDeviceWithState ()
-+ (BugsnagDeviceWithState *)deviceWithDictionary:(NSDictionary *)event;
-
-+ (BugsnagDeviceWithState *)deviceWithOomData:(NSDictionary *)data;
-
-- (NSDictionary *)toDictionary;
-
-+ (BugsnagDeviceWithState *) deviceFromJson:(NSDictionary *)json;
-@end
+#import "BSG_KSSystemInfo.h"
+#import "BugsnagDevice+Private.h"
+#import "BugsnagDeviceWithState+Private.h"
 
 @interface BugsnagDeviceTest : XCTestCase
 @property NSDictionary *data;
@@ -69,7 +49,7 @@ NSNumber *BSGDeviceFreeSpace(NSSearchPathDirectory directory);
 }
 
 - (void)testDevice {
-    BugsnagDevice *device = [BugsnagDevice deviceWithDictionary:self.data];
+    BugsnagDevice *device = [BugsnagDevice deviceWithKSCrashReport:self.data];
 
     // verify stateless fields
     XCTAssertTrue(device.jailbroken);
@@ -89,7 +69,7 @@ NSNumber *BSGDeviceFreeSpace(NSSearchPathDirectory directory);
 }
 
 - (void)testDeviceWithState {
-    BugsnagDeviceWithState *device = [BugsnagDeviceWithState deviceWithDictionary:self.data];
+    BugsnagDeviceWithState *device = [BugsnagDeviceWithState deviceWithKSCrashReport:self.data];
 
     // verify stateless fields
     XCTAssertTrue(device.jailbroken);
@@ -108,7 +88,7 @@ NSNumber *BSGDeviceFreeSpace(NSSearchPathDirectory directory);
     XCTAssertEqualObjects(runtimeVersions, device.runtimeVersions);
 
     // verify stateful fields
-    XCTAssertTrue(device.freeDisk > 0);
+    XCTAssertGreaterThan(device.freeDisk.longLongValue, 0);
     XCTAssertEqualObjects(@742920192, device.freeMemory);
     XCTAssertEqualObjects(@"portrait", device.orientation);
 
@@ -118,8 +98,14 @@ NSNumber *BSGDeviceFreeSpace(NSSearchPathDirectory directory);
     XCTAssertEqualObjects([formatter dateFromString:@"2014-12-02T01:56:13Z"], device.time);
 }
 
+- (void)testDeviceWithRealSystemInfo {
+    NSDictionary *systemInfo = [BSG_KSSystemInfo systemInfo];
+    BugsnagDeviceWithState *device = [BugsnagDeviceWithState deviceWithKSCrashReport:@{@"system": systemInfo}];
+    XCTAssertLessThan(device.freeMemory.unsignedLongLongValue, device.totalMemory.unsignedLongLongValue);
+}
+
 - (void)testDeviceToDict {
-    BugsnagDevice *device = [BugsnagDevice deviceWithDictionary:self.data];
+    BugsnagDevice *device = [BugsnagDevice deviceWithKSCrashReport:self.data];
     device.locale = @"en-US";
     NSDictionary *dict = [device toDictionary];
 
@@ -142,7 +128,7 @@ NSNumber *BSGDeviceFreeSpace(NSSearchPathDirectory directory);
 }
 
 - (void)testDeviceWithStateToDict {
-    BugsnagDeviceWithState *device = [BugsnagDeviceWithState deviceWithDictionary:self.data];
+    BugsnagDeviceWithState *device = [BugsnagDeviceWithState deviceWithKSCrashReport:self.data];
     device.locale = @"en-US";
     NSDictionary *dict = [device toDictionary];
 
@@ -173,25 +159,6 @@ NSNumber *BSGDeviceFreeSpace(NSSearchPathDirectory directory);
     XCTAssertEqualObjects([formatter dateFromString:@"2014-12-02T01:56:13Z"], device.time);
 }
 
-- (void)testDeviceFromOOM {
-    NSDictionary *oomData = @{
-            @"id": @"123",
-            @"osVersion": @"13.1",
-            @"osName": @"macOS",
-            @"model": @"iPhone 6",
-            @"modelNumber": @"iPhone X",
-            @"locale": @"yue"
-    };
-
-    BugsnagDeviceWithState *device = [BugsnagDeviceWithState deviceWithOomData:oomData];
-    XCTAssertEqualObjects(@"123", device.id);
-    XCTAssertEqualObjects(@"13.1", device.osVersion);
-    XCTAssertEqualObjects(@"macOS", device.osName);
-    XCTAssertEqualObjects(@"iPhone 6", device.model);
-    XCTAssertEqualObjects(@"iPhone X", device.modelNumber);
-    XCTAssertEqualObjects(@"yue", device.locale);
-}
-
 - (void)testDeviceFreeSpaceShouldBeLargeNumber {
     NSNumber *freeBytes = BSGDeviceFreeSpace(NSCachesDirectory);
     XCTAssertNotNil(freeBytes, @"expect a valid number for successful call to retrieve free space");
@@ -205,7 +172,7 @@ NSNumber *BSGDeviceFreeSpace(NSSearchPathDirectory directory);
 }
 
 - (void)testDeviceRuntimeInfoAppended {
-    BugsnagDevice *device = [BugsnagDevice deviceWithDictionary:self.data];
+    BugsnagDevice *device = [BugsnagDevice deviceWithKSCrashReport:self.data];
     XCTAssertEqual(2, [device.runtimeVersions count]);
     XCTAssertEqualObjects(@"14B25", device.runtimeVersions[@"osBuild"]);
     XCTAssertEqualObjects(@"10.0.0 (clang-1000.11.45.5)", device.runtimeVersions[@"clangVersion"]);

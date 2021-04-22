@@ -10,14 +10,16 @@
 #import "BugsnagSession.h"
 
 @class BugsnagConfiguration;
+@class BugsnagNotifier;
 
 @interface BugsnagSessionTrackingPayload : NSObject
 
-@property NSArray<BugsnagSession *> *sessions;
+@property (nonatomic) NSArray<BugsnagSession *> *sessions;
 
 - (instancetype)initWithSessions:(NSArray<BugsnagSession *> *)sessions
                           config:(BugsnagConfiguration *)config
-                    codeBundleId:(NSString *)codeBundleId;
+                    codeBundleId:(NSString *)codeBundleId
+                        notifier:(BugsnagNotifier *)notifier;
 
 - (NSMutableDictionary *)toJson;
 

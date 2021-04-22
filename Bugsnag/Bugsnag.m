@@ -25,46 +25,24 @@
 //
 
 #import "Bugsnag.h"
+
 #import "BSG_KSCrash.h"
+#import "Bugsnag+Private.h"
+#import "BugsnagBreadcrumbs.h"
 #import "BugsnagLogger.h"
-#import "BugsnagClient.h"
-#import "BugsnagClientInternal.h"
+#import "BugsnagClient+Private.h"
+#import "BugsnagConfiguration+Private.h"
 #import "BugsnagKeys.h"
+#import "BugsnagMetadata+Private.h"
 #import "BugsnagPlugin.h"
 #import "BugsnagHandledState.h"
+#import "BugsnagSystemState.h"
+#import "BSGStorageMigratorV0V1.h"
 
 static BugsnagClient *bsg_g_bugsnag_client = NULL;
 
-@interface BugsnagConfiguration ()
-@property(readwrite, retain, nullable) BugsnagMetadata *metadata;
-@property(readwrite, retain, nullable) BugsnagMetadata *config;
-@end
-
-@interface Bugsnag ()
-+ (BugsnagClient *)client;
-+ (BOOL)bugsnagStarted;
-@end
-
 @interface NSDictionary (BSGKSMerge)
 - (NSDictionary *)BSG_mergedInto:(NSDictionary *)dest;
-@end
-
-@interface BugsnagEvent ()
-@property(readwrite) NSUInteger depth;
-@end
-
-@interface BugsnagClient ()
-- (void)startListeningForStateChangeNotification:(NSString *_Nonnull)notificationName;
-- (void)addBreadcrumbWithBlock:(void (^_Nonnull)(BugsnagBreadcrumb *_Nonnull))block;
-- (void)notifyInternal:(BugsnagEvent *_Nonnull)event
-                 block:(BugsnagOnErrorBlock)block;
-- (void)addRuntimeVersionInfo:(NSString *)info
-                      withKey:(NSString *)key;
-@property (nonatomic) NSString *codeBundleId;
-@end
-
-@interface BugsnagMetadata ()
-- (NSDictionary *_Nonnull)toDictionary;
 @end
 
 @implementation Bugsnag
@@ -81,6 +59,7 @@ static BugsnagClient *bsg_g_bugsnag_client = NULL;
 
 + (BugsnagClient *_Nonnull)startWithConfiguration:(BugsnagConfiguration *_Nonnull)configuration {
     @synchronized(self) {
+        [BSGStorageMigratorV0V1 migrate];
         if (bsg_g_bugsnag_client == nil) {
             bsg_g_bugsnag_client = [[BugsnagClient alloc] initWithConfiguration:configuration];
             [bsg_g_bugsnag_client start];
@@ -89,6 +68,14 @@ static BugsnagClient *bsg_g_bugsnag_client = NULL;
         }
         return bsg_g_bugsnag_client;
     }
+}
+
+/**
+ * Purge the global client so that it will be regenerated on the next call to start.
+ * This is only used by the unit tests.
+ */
++ (void)purge {
+    bsg_g_bugsnag_client = nil;
 }
 
 + (BugsnagConfiguration *)configuration {
@@ -111,6 +98,19 @@ static BugsnagClient *bsg_g_bugsnag_client = NULL;
         return [self.client appDidCrashLastLaunch];
     }
     return NO;
+}
+
++ (BugsnagLastRunInfo *)lastRunInfo {
+    if ([self bugsnagStarted]) {
+        return self.client.lastRunInfo;
+    }
+    return nil;
+}
+
++ (void)markLaunchCompleted {
+    if ([self bugsnagStarted]) {
+        [self.client markLaunchCompleted];
+    }
 }
 
 + (void)notify:(NSException *)exception {
@@ -187,6 +187,14 @@ static BugsnagClient *bsg_g_bugsnag_client = NULL;
         [self.client leaveBreadcrumbWithMessage:message
                                        metadata:metadata
                                         andType:type];
+    }
+}
+
++ (NSArray<BugsnagBreadcrumb *> *_Nonnull)breadcrumbs {
+    if ([self bugsnagStarted]) {
+        return self.client.breadcrumbs.breadcrumbs ?: @[];
+    } else {
+        return @[];
     }
 }
 

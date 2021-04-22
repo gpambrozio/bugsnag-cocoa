@@ -9,7 +9,6 @@
 
 /** Location where files are stored. */
 @property(nonatomic, readonly, retain) NSString *path;
-@property(nonatomic, readonly, retain) NSString *filenameSuffix;
 
 /** The total number of files. Note: This is an expensive operation. */
 @property(nonatomic, readonly, assign) NSUInteger fileCount;
@@ -24,8 +23,6 @@
 - (instancetype)initWithPath:(NSString *)path
               filenameSuffix:(NSString *)filenameSuffix;
 
-- (NSArray *)fileIds;
-
 /** Fetch a file.
  *
  * @param fileId The ID of the file to fetch.
@@ -34,11 +31,10 @@
  */
 - (NSDictionary *)fileWithId:(NSString *)fileId;
 
-/** Get a list of all files.
- *
- * @return A list of files in chronological order (oldest first).
+/**
+ * @return A list of all files IDs in chronological order (oldest first).
  */
-- (NSArray *)allFiles;
+- (NSArray *)fileIds;
 
 /** Get a list of all files by filename.
  *
@@ -51,10 +47,6 @@
  * @param fileId The file ID.
  */
 - (void)deleteFileWithId:(NSString *)fileId;
-
-/** Delete all files.
- */
-- (void)deleteAllFiles;
 
 /** Prune files, keeping only the newest ones.
  *
@@ -73,7 +65,4 @@
 - (NSMutableDictionary *)readFile:(NSString *)path
                             error:(NSError *__autoreleasing *)error;
 
-+ (NSString *)findReportStorePath:(NSString *)customDirectory;
-
-- (NSString *)fileIdFromFilename:(NSString *)filename;
 @end

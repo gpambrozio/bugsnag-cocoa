@@ -7,6 +7,8 @@
 //
 
 #import "BugsnagApp.h"
+
+#import "BSG_KSSystemInfo.h"
 #import "BugsnagKeys.h"
 #import "BugsnagConfiguration.h"
 #import "BugsnagCollections.h"
@@ -18,7 +20,9 @@
  */
 NSDictionary *BSGParseAppMetadata(NSDictionary *event) {
     NSMutableDictionary *app = [NSMutableDictionary new];
-    BSGDictSetSafeObject(app, [event valueForKeyPath:@"system.CFBundleExecutable"] , @"name");
+    app[@"name"] = [event valueForKeyPath:@"system." BSG_KSSystemField_BundleExecutable];
+    app[@"binaryArch"] = [event valueForKeyPath:@"system." BSG_KSSystemField_BinaryArch];
+    app[@"runningOnRosetta"] = [event valueForKeyPath:@"system." BSG_KSSystemField_Translated];
     return app;
 }
 
@@ -57,13 +61,10 @@ NSDictionary *BSGParseAppMetadata(NSDictionary *event) {
 {
     NSDictionary *system = event[BSGKeySystem];
     app.id = system[@"CFBundleIdentifier"];
-    app.bundleVersion = [event valueForKeyPath:@"user.config.bundleVersion"] ?:
-            (config.bundleVersion ?: system[@"CFBundleVersion"]);
+    app.bundleVersion = config.bundleVersion ?: system[@"CFBundleVersion"];
     app.dsymUuid = system[@"app_uuid"];
-    // Preferentially take App version values from the event, the config and the system
-    app.version = [event valueForKeyPath:@"user.config.appVersion"] ?:
-        (config.appVersion ?: system[@"CFBundleShortVersionString"]);
-    app.releaseStage = [event valueForKeyPath:@"user.config.releaseStage"] ?: config.releaseStage;
+    app.version = config.appVersion ?: system[@"CFBundleShortVersionString"];
+    app.releaseStage = config.releaseStage;
     app.codeBundleId = [event valueForKeyPath:@"user.state.app.codeBundleId"] ?: codeBundleId;
     app.type = config.appType;
 }
@@ -71,16 +72,13 @@ NSDictionary *BSGParseAppMetadata(NSDictionary *event) {
 - (NSDictionary *)toDict
 {
     NSMutableDictionary *dict = [NSMutableDictionary new];
-    BSGDictInsertIfNotNil(dict, self.bundleVersion, @"bundleVersion");
-    BSGDictInsertIfNotNil(dict, self.codeBundleId, @"codeBundleId");
-    BSGDictInsertIfNotNil(dict, self.id, @"id");
-    BSGDictInsertIfNotNil(dict, self.releaseStage, @"releaseStage");
-    BSGDictInsertIfNotNil(dict, self.type, @"type");
-    BSGDictInsertIfNotNil(dict, self.version, @"version");
-
-    if (self.dsymUuid != nil) {
-        BSGDictInsertIfNotNil(dict, @[self.dsymUuid], @"dsymUUIDs");
-    }
+    dict[@"bundleVersion"] = self.bundleVersion;
+    dict[@"codeBundleId"] = self.codeBundleId;
+    dict[@"dsymUUIDs"] = BSGArrayWithObject(self.dsymUuid);
+    dict[@"id"] = self.id;
+    dict[@"releaseStage"] = self.releaseStage;
+    dict[@"type"] = self.type;
+    dict[@"version"] = self.version;
     return dict;
 }
 

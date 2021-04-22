@@ -7,21 +7,11 @@
 //
 
 #import <XCTest/XCTest.h>
-#import "Bugsnag.h"
+
+#import "Bugsnag+Private.h"
+#import "BugsnagClient+Private.h"
 #import "BugsnagConfiguration.h"
 #import "BugsnagTestConstants.h"
-
-@interface Bugsnag ()
-+ (BugsnagClient *)client;
-@end
-
-@interface BugsnagClient ()
-- (NSDictionary *)collectAppWithState;
-- (NSDictionary *)collectDeviceWithState;
-- (NSArray *)collectBreadcrumbs;
-- (NSArray *)collectThreads;
-@property NSString *codeBundleId;
-@end
 
 @interface BugsnagClientPayloadInfoTest : XCTestCase
 
@@ -39,27 +29,45 @@
     client.codeBundleId = @"f00123";
     NSDictionary *app = [client collectAppWithState];
     XCTAssertNotNil(app);
-
-    NSArray *observedKeys = [[app allKeys] sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
-    NSArray *expectedKeys = @[@"bundleVersion", @"codeBundleId", @"dsymUUIDs", @"duration", @"durationInForeground",
-            @"id", @"inForeground", @"releaseStage", @"type", @"version"];
-    XCTAssertEqualObjects(observedKeys, expectedKeys);
+    
+    XCTAssertEqualObjects(app[@"codeBundleId"], @"f00123");
+    XCTAssertNotNil(app[@"dsymUUIDs"]);
+    XCTAssertNotNil(app[@"duration"]);
+    XCTAssertNotNil(app[@"durationInForeground"]);
+    XCTAssertNotNil(app[@"inForeground"]);
+    XCTAssertNotNil(app[@"releaseStage"]);
+    XCTAssertNotNil(app[@"type"]);
+    
+    // Depending on the Info.plist of the unit test runner, these values may not always be present.
+    XCTAssertEqualObjects(app[@"bundleVersion"], NSBundle.mainBundle.infoDictionary[@"CFBundleVersion"]);
+    XCTAssertEqualObjects(app[@"id"], NSBundle.mainBundle.bundleIdentifier);
+    XCTAssertEqualObjects(app[@"version"], NSBundle.mainBundle.infoDictionary[@"CFBundleShortVersionString"]);
 }
 
 - (void)testDeviceInfo {
     BugsnagClient *client = [Bugsnag client];
     NSDictionary *device = [client collectDeviceWithState];
-    XCTAssertNotNil(device);
-
-    NSArray *observedKeys = [[device allKeys] sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
-    NSMutableArray *expectedKeys = [@[@"freeDisk", @"freeMemory", @"id", @"jailbroken", @"locale", @"manufacturer",
-            @"model", @"osName", @"osVersion", @"runtimeVersions", @"time", @"totalMemory"] mutableCopy];
-
+    XCTAssertNotNil(device[@"freeDisk"]);
+    XCTAssertNotNil(device[@"freeMemory"]);
+    XCTAssertNotNil(device[@"id"]);
+    XCTAssertNotNil(device[@"jailbroken"]);
+    XCTAssertNotNil(device[@"locale"]);
+    XCTAssertNotNil(device[@"manufacturer"]);
+    XCTAssertNotNil(device[@"model"]);
+    XCTAssertNotNil(device[@"osName"]);
+    XCTAssertNotNil(device[@"osVersion"]);
+    XCTAssertNotNil(device[@"runtimeVersions"]);
+    XCTAssertNotNil(device[@"time"]);
+    XCTAssertNotNil(device[@"totalMemory"]);
+    
 #if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE
-    [expectedKeys addObject:@"modelNumber"];
+    NSProcessInfo *processInfo = NSProcessInfo.processInfo;
+    BOOL isOnMac = [processInfo respondsToSelector:NSSelectorFromString(@"isMacCatalystApp")] &&
+                    [[processInfo valueForKey:@"isMacCatalystApp"] boolValue];
+    if (!isOnMac) {
+        XCTAssertNotNil(device[@"modelNumber"]);
+    }
 #endif
-
-    XCTAssertEqualObjects(observedKeys, [expectedKeys sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)]);
 }
 
 - (void)testBreadcrumbInfo {

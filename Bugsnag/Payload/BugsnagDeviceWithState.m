@@ -9,25 +9,27 @@
 #import "BugsnagPlatformConditional.h"
 #import "BSG_RFC3339DateTool.h"
 
+#import "BugsnagDevice+Private.h"
 #import "BugsnagDeviceWithState.h"
 #import "BugsnagCollections.h"
 #import "BugsnagLogger.h"
-#import "BSGOutOfMemoryWatchdog.h"
+#import "BugsnagSystemState.h"
 #import "Bugsnag.h"
 
-NSDictionary *BSGParseDeviceMetadata(NSDictionary *event) {
+NSMutableDictionary *BSGParseDeviceMetadata(NSDictionary *event) {
     NSMutableDictionary *device = [NSMutableDictionary new];
     NSDictionary *state = [event valueForKeyPath:@"user.state.deviceState"];
     [device addEntriesFromDictionary:state];
-    BSGDictInsertIfNotNil(device, [event valueForKeyPath:@"system.time_zone"], @"timezone");
+    device[@"timezone"] = [event valueForKeyPath:@"system.time_zone"];
+    device[@"macCatalystiOSVersion"] = [event valueForKeyPath:@"system.iOSSupportVersion"];
 
 #if BSG_PLATFORM_SIMULATOR
-    BSGDictSetSafeObject(device, @YES, @"simulator");
+    device[@"simulator"] = @YES;
 #else
-    BSGDictSetSafeObject(device, @NO, @"simulator");
+    device[@"simulator"] = @NO;
 #endif
 
-    BSGDictSetSafeObject(device, @(PLATFORM_WORD_SIZE), @"wordSize");
+    device[@"wordSize"] = @(PLATFORM_WORD_SIZE);
     return device;
 }
 
@@ -37,7 +39,6 @@ NSDictionary *BSGParseDeviceMetadata(NSDictionary *event) {
  * @return free space in the number of bytes, or nil if this information could not be found
  */
 NSNumber *BSGDeviceFreeSpace(NSSearchPathDirectory directory) {
-    NSNumber *freeBytes = nil;
     NSFileManager *fileManager = [NSFileManager defaultManager];
     NSArray *searchPaths = NSSearchPathForDirectoriesInDomains(directory, NSUserDomainMask, true);
     NSString *path = [searchPaths lastObject];
@@ -46,20 +47,11 @@ NSNumber *BSGDeviceFreeSpace(NSSearchPathDirectory directory) {
     NSDictionary *fileSystemAttrs =
             [fileManager attributesOfFileSystemForPath:path error:&error];
 
-    if (error) {
+    if (!fileSystemAttrs) {
         bsg_log_warn(@"Failed to read free disk space: %@", error);
-    } else {
-        freeBytes = [fileSystemAttrs objectForKey:NSFileSystemFreeSize];
     }
-    return freeBytes;
+    return fileSystemAttrs[NSFileSystemFreeSize];
 }
-
-@interface BugsnagDevice ()
-+ (void)populateFields:(BugsnagDevice *)device
-            dictionary:(NSDictionary *)event;
-- (void)appendRuntimeInfo:(NSDictionary *)info;
-- (NSDictionary *)toDictionary;
-@end
 
 @implementation BugsnagDeviceWithState
 
@@ -84,28 +76,17 @@ NSNumber *BSGDeviceFreeSpace(NSSearchPathDirectory directory) {
     }
 
     id time = json[@"time"];
-    if (time && [time isKindOfClass:[NSString class]]) {
+    if ([time isKindOfClass:[NSString class]]) {
         device.time = [BSG_RFC3339DateTool dateFromString:time];
     }
     return device;
 }
 
-+ (BugsnagDeviceWithState *)deviceWithOomData:(NSDictionary *)data {
-    BugsnagDeviceWithState *device = [BugsnagDeviceWithState new];
-    device.id = data[@"id"];
-    device.osVersion = data[@"osVersion"];
-    device.osName = data[@"osName"];
-    device.model = data[@"model"];
-    device.modelNumber = data[@"modelNumber"];
-    device.locale = data[@"locale"];
-    return device;
-}
-
-+ (BugsnagDeviceWithState *)deviceWithDictionary:(NSDictionary *)event {
++ (BugsnagDeviceWithState *)deviceWithKSCrashReport:(NSDictionary *)event {
     BugsnagDeviceWithState *device = [BugsnagDeviceWithState new];
     [self populateFields:device dictionary:event];
     device.orientation = [event valueForKeyPath:@"user.state.deviceState.orientation"];
-    device.freeMemory = [event valueForKeyPath:@"system.memory.free"] ?: [event valueForKeyPath:@"system.memory.usable"];
+    device.freeMemory = [event valueForKeyPath:@"system.memory.free"];
     device.freeDisk = BSGDeviceFreeSpace(NSCachesDirectory);
 
     NSString *val = [event valueForKeyPath:@"report.timestamp"];
@@ -124,15 +105,11 @@ NSNumber *BSGDeviceFreeSpace(NSSearchPathDirectory directory) {
 }
 
 - (NSDictionary *)toDictionary {
-    NSMutableDictionary *dict = (NSMutableDictionary *)
-    [super toDictionary];
-    BSGDictInsertIfNotNil(dict, self.freeDisk, @"freeDisk");
-    BSGDictInsertIfNotNil(dict, self.freeMemory, @"freeMemory");
-    BSGDictInsertIfNotNil(dict, self.orientation, @"orientation");
-
-    if (self.time != nil) {
-        BSGDictInsertIfNotNil(dict, [BSG_RFC3339DateTool stringFromDate:self.time], @"time");
-    }
+    NSMutableDictionary *dict = [[super toDictionary] mutableCopy];
+    dict[@"freeDisk"] = self.freeDisk;
+    dict[@"freeMemory"] = self.freeMemory;
+    dict[@"orientation"] = self.orientation;
+    dict[@"time"] = self.time ? [BSG_RFC3339DateTool stringFromDate:self.time] : nil;
     return dict;
 }
 

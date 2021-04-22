@@ -24,73 +24,90 @@
 
 #import "BSG_RFC3339DateTool.h"
 
-@interface BSG_RFC3339DateTool ()
-+ (NSDateFormatter *)iosFormatterInstance;
-@end
+// New formatter: Everything is UTC with milliseconds
+static NSDateFormatter *g_currentDateFormatter;
+
+// Old formatter: Everything is UTC, no milliseconds
+static NSDateFormatter *g_utcDateFormatter;
+
+// Oldx2 formatter: Time zones can be specified
+static NSDateFormatter *g_timezoneAllowedDateFormatter;
 
 @implementation BSG_RFC3339DateTool
 
-static NSString *const kRfcDateFormatterKey = @"RfcDateFormatter";
-static NSString *const kIsoDateFormatterKey = @"IsoDateFormatter";
++ (void)initialize {
+    NSLocale *locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"];
+    NSTimeZone *zone = [NSTimeZone timeZoneForSecondsFromGMT:0];
 
-+ (NSDateFormatter *)sharedInstance {
-    NSMutableDictionary *threadDict = [[NSThread currentThread] threadDictionary];
-    NSDateFormatter *formatter = threadDict[kRfcDateFormatterKey];
-    if (formatter == nil) {
-        formatter = [NSDateFormatter new];
-        NSLocale *locale =
-        [[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"];
-        [formatter setLocale:locale];
-        [formatter setDateFormat:@"yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'"];
-        [formatter setTimeZone:[NSTimeZone timeZoneForSecondsFromGMT:0]];
-        threadDict[kRfcDateFormatterKey] = formatter;
-    }
+    g_currentDateFormatter = [NSDateFormatter new];
+    [g_currentDateFormatter setLocale:locale];
+    [g_currentDateFormatter setTimeZone:zone];
+    [g_currentDateFormatter setDateFormat:@"yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'SSS'Z'"];
 
-    formatter = threadDict[kRfcDateFormatterKey];
-    return formatter;
+    g_utcDateFormatter = [NSDateFormatter new];
+    [g_utcDateFormatter setLocale:locale];
+    [g_utcDateFormatter setTimeZone:zone];
+    [g_utcDateFormatter setDateFormat:@"yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'"];
+
+    g_timezoneAllowedDateFormatter = [NSDateFormatter new];
+    [g_timezoneAllowedDateFormatter setLocale:locale];
+    [g_timezoneAllowedDateFormatter setTimeZone:zone];
+    [g_timezoneAllowedDateFormatter setDateFormat:@"yyyy'-'MM'-'dd'T'HH':'mm':'ssZZZ"];
 }
 
-/**
-Used internally to convert any dates with timezones (from older notifier versions) to Zulu time
- */
-+ (NSDateFormatter *)iosFormatterInstance {
-    NSMutableDictionary *threadDict = [[NSThread currentThread] threadDictionary];
-    NSDateFormatter *formatter = threadDict[kIsoDateFormatterKey];
-    if (formatter == nil) {
-        formatter = [NSDateFormatter new];
-        NSLocale *locale =
-        [[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"];
-        [formatter setLocale:locale];
-        [formatter setDateFormat:@"yyyy'-'MM'-'dd'T'HH':'mm':'ssZZZ"];
-        [formatter setTimeZone:[NSTimeZone timeZoneForSecondsFromGMT:0]];
-        threadDict[kIsoDateFormatterKey] = formatter;
-    }
-    
-    formatter = threadDict[kIsoDateFormatterKey];
-    return formatter;
-}
 
 + (NSString *)stringFromDate:(NSDate *)date {
     if (![date isKindOfClass:[NSDate class]]) {
         return nil;
     }
-    return [[self sharedInstance] stringFromDate:date];
+    return [g_currentDateFormatter stringFromDate:date];
 }
 
 + (NSDate *)dateFromString:(NSString *)string {
     if (![string isKindOfClass:[NSString class]]) {
         return nil;
     }
-    NSDate *date = [[self sharedInstance] dateFromString:string];
-    if (!date) {
-        date = [[self iosFormatterInstance] dateFromString:string];
+    NSDate *date = nil;
+
+    if((date = [g_currentDateFormatter dateFromString:string]) != nil) {
+        return date;
     }
-    return date;
+
+    // Fallback to older date formats
+    if((date = [g_utcDateFormatter dateFromString:string]) != nil) {
+        return date;
+    }
+    
+    return [g_timezoneAllowedDateFormatter dateFromString:string];
 }
 
-+ (NSString *)stringFromUNIXTimestamp:(unsigned long long)timestamp {
++ (NSString *)stringFromUNIXTimestamp:(NSTimeInterval)timestamp {
     return
         [self stringFromDate:[NSDate dateWithTimeIntervalSince1970:timestamp]];
+}
+
++ (BOOL)isLikelyDateString:(NSString *)string {
+    const char *ptr = string.UTF8String;
+    return (string.length >= 19 &&
+            isdigit(ptr[0]) &&
+            isdigit(ptr[1]) &&
+            isdigit(ptr[2]) &&
+            isdigit(ptr[3]) &&
+            '-' == (ptr[4]) &&
+            isdigit(ptr[5]) &&
+            isdigit(ptr[6]) &&
+            '-' == (ptr[7]) &&
+            isdigit(ptr[8]) &&
+            isdigit(ptr[9]) &&
+            'T' ==  ptr[10] &&
+            isdigit(ptr[11]) &&
+            isdigit(ptr[12]) &&
+            ':' == (ptr[13]) &&
+            isdigit(ptr[14]) &&
+            isdigit(ptr[15]) &&
+            ':' == (ptr[16]) &&
+            isdigit(ptr[17]) &&
+            isdigit(ptr[18]));
 }
 
 @end

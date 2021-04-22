@@ -29,6 +29,7 @@
 #import "BSG_KSJSONCodec.h"
 #import "BSG_RFC3339DateTool.h"
 #import "NSError+BSG_SimpleConstructor.h"
+#import "BSG_KSLogger.h"
 
 @interface BSG_KSJSONCodec ()
 
@@ -41,7 +42,7 @@
 @property(nonatomic, readwrite, retain) NSMutableArray *containerStack;
 
 /** Current array or object being decoded (weak ref) */
-@property(nonatomic, readwrite, assign) id currentContainer;
+@property(nonatomic, readwrite, weak) id currentContainer;
 
 /** Top level array or object in the decoded tree */
 @property(nonatomic, readwrite, retain) id topLevelContainer;
@@ -86,7 +87,7 @@ codecWithEncodeOptions:(BSG_KSJSONEncodeOption)encodeOptions
  *
  * @return The initialized codec.
  */
-- (id)initWithEncodeOptions:(BSG_KSJSONEncodeOption)encodeOptions
+- (instancetype)initWithEncodeOptions:(BSG_KSJSONEncodeOption)encodeOptions
               decodeOptions:(BSG_KSJSONDecodeOption)decodeOptions;
 
 #pragma mark Callbacks
@@ -187,7 +188,7 @@ codecWithEncodeOptions:(BSG_KSJSONEncodeOption)encodeOptions
                                  decodeOptions:decodeOptions];
 }
 
-- (id)initWithEncodeOptions:(BSG_KSJSONEncodeOption)encodeOptions
+- (instancetype)initWithEncodeOptions:(BSG_KSJSONEncodeOption)encodeOptions
               decodeOptions:(BSG_KSJSONDecodeOption)decodeOptions {
     if ((self = [super init])) {
         self.containerStack = [NSMutableArray array];
@@ -231,7 +232,8 @@ static inline NSString *stringFromCString(const char *const string) {
 
 int bsg_ksjsoncodecobjc_i_onElement(BSG_KSJSONCodec *codec, NSString *name,
                                     id element) {
-    if (codec->_currentContainer == nil) {
+    id currentContainer = codec->_currentContainer;
+    if (!currentContainer) {
         codec.error = [NSError
             bsg_errorWithDomain:@"KSJSONCodecObjC"
                            code:0
@@ -240,11 +242,10 @@ int bsg_ksjsoncodecobjc_i_onElement(BSG_KSJSONCodec *codec, NSString *name,
         return BSG_KSJSON_ERROR_INVALID_DATA;
     }
 
-    if ([codec->_currentContainer isKindOfClass:[NSMutableDictionary class]]) {
-        [(NSMutableDictionary *)codec->_currentContainer setValue:element
-                                                           forKey:name];
+    if ([currentContainer isKindOfClass:[NSMutableDictionary class]]) {
+        [(NSMutableDictionary *)currentContainer setValue:element forKey:name];
     } else {
-        [(NSMutableArray *)codec->_currentContainer addObject:element];
+        [(NSMutableArray *)currentContainer addObject:element];
     }
     return BSG_KSJSON_OK;
 }
@@ -296,10 +297,11 @@ int bsg_ksjsoncodecobjc_i_onNullElement(const char *const cName,
     NSString *name = stringFromCString(cName);
     BSG_KSJSONCodec *codec = (__bridge BSG_KSJSONCodec *)userData;
 
+    id currentContainer = codec->_currentContainer;
     if ((codec->_ignoreNullsInArrays &&
-         [codec->_currentContainer isKindOfClass:[NSArray class]]) ||
+         [currentContainer isKindOfClass:[NSArray class]]) ||
         (codec->_ignoreNullsInObjects &&
-         [codec->_currentContainer isKindOfClass:[NSDictionary class]])) {
+         [currentContainer isKindOfClass:[NSDictionary class]])) {
         return BSG_KSJSON_OK;
     }
 
@@ -447,10 +449,12 @@ int bsg_ksjsoncodecobjc_i_encodeObject(BSG_KSJSONCodec *codec, id object,
             keys = [keys sortedArrayUsingSelector:@selector(compare:)];
         }
         for (id key in keys) {
-            if ((result = bsg_ksjsoncodecobjc_i_encodeObject(
-                     codec, [object valueForKey:key], key, context)) !=
-                BSG_KSJSON_OK) {
-                return result;
+            if([key isKindOfClass:[NSString class]]) {
+                if ((result = bsg_ksjsoncodecobjc_i_encodeObject(
+                         codec, [object valueForKey:key], key, context)) !=
+                    BSG_KSJSON_OK) {
+                    return result;
+                }
             }
         }
         return bsg_ksjsonendContainer(context);
@@ -485,30 +489,41 @@ int bsg_ksjsoncodecobjc_i_encodeObject(BSG_KSJSONCodec *codec, id object,
 + (NSData *)encode:(id)object
            options:(BSG_KSJSONEncodeOption)encodeOptions
              error:(NSError *__autoreleasing *)error {
-    NSMutableData *data = [NSMutableData data];
-    BSG_KSJSONEncodeContext JSONContext;
-    bsg_ksjsonbeginEncode(
-        &JSONContext, encodeOptions & BSG_KSJSONEncodeOptionPretty,
-        bsg_ksjsoncodecobjc_i_addJSONData, (__bridge void *)data);
-    BSG_KSJSONCodec *codec =
-        [self codecWithEncodeOptions:encodeOptions decodeOptions:0];
+    @try {
+        NSMutableData *data = [NSMutableData data];
+        BSG_KSJSONEncodeContext JSONContext;
+        bsg_ksjsonbeginEncode(
+            &JSONContext, encodeOptions & BSG_KSJSONEncodeOptionPretty,
+            bsg_ksjsoncodecobjc_i_addJSONData, (__bridge void *)data);
+        BSG_KSJSONCodec *codec =
+            [self codecWithEncodeOptions:encodeOptions decodeOptions:0];
 
-    int result =
-        bsg_ksjsoncodecobjc_i_encodeObject(codec, object, NULL, &JSONContext);
-    if (error != nil) {
-        *error = codec.error;
+        int result =
+            bsg_ksjsoncodecobjc_i_encodeObject(codec, object, NULL, &JSONContext);
+        if (error != nil) {
+            *error = codec.error;
+        }
+        return result == BSG_KSJSON_OK ? data : nil;
+    } @catch (NSException *exception) {
+        BSG_KSLOG_ERROR(@"Could not encode JSON object: %@", exception.description);
+        if (error != nil) {
+            *error = [NSError bsg_errorWithDomain:@"KSJSONCodecObjC" code:0 description:exception.description];
+        }
+        return nil;
     }
-    return result == BSG_KSJSON_OK ? data : nil;
 }
 
 + (id)decode:(NSData *)JSONData
-     options:(BSG_KSJSONDecodeOption)decodeOptions
        error:(NSError *__autoreleasing *)error {
     *error = nil;
     id result = nil;
     @try {
         result = [NSJSONSerialization JSONObjectWithData:JSONData options:0 error:error];
     } @catch (NSException *exception) {
+        BSG_KSLOG_ERROR(@"Could not decode JSON object: %@", exception.description);
+        if (error != nil) {
+            *error = [NSError bsg_errorWithDomain:@"KSJSONCodecObjC" code:0 description:exception.description];
+        }
         result = @{};
     }
     return result;

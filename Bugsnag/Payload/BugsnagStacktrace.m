@@ -7,23 +7,13 @@
 //
 
 #import "BugsnagStacktrace.h"
-#import "BugsnagStackframe.h"
+
 #import "BugsnagKeys.h"
-
-@interface BugsnagStackframe ()
-+ (BugsnagStackframe *)frameFromDict:(NSDictionary *)dict
-                          withImages:(NSArray *)binaryImages;
-- (NSDictionary *)toDictionary;
-+ (instancetype)frameFromJson:(NSDictionary *)json;
-@end
-
-@interface BugsnagStacktrace ()
-@property NSMutableArray<BugsnagStackframe *> *trace;
-@end
+#import "BugsnagStackframe+Private.h"
 
 @implementation BugsnagStacktrace
 
-+ (instancetype)stacktraceFromJson:(NSDictionary *)json {
++ (instancetype)stacktraceFromJson:(NSArray<NSDictionary *> *)json {
     BugsnagStacktrace *trace = [BugsnagStacktrace new];
     NSMutableArray *data = [NSMutableArray new];
 
@@ -43,7 +33,7 @@
 - (instancetype)initWithTrace:(NSArray<NSDictionary *> *)trace
                  binaryImages:(NSArray<NSDictionary *> *)binaryImages {
     if (self = [super init]) {
-        self.trace = [NSMutableArray new];
+        _trace = [NSMutableArray new];
 
         for (NSDictionary *obj in trace) {
             BugsnagStackframe *frame = [BugsnagStackframe frameFromDict:obj withImages:binaryImages];

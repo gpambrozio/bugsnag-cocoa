@@ -1,5 +1,6 @@
 #import "BSGSerialization.h"
 #import "BugsnagLogger.h"
+#import "BSGJSONSerialization.h"
 
 BOOL BSGIsSanitizedType(id obj) {
     static dispatch_once_t onceToken;
@@ -38,7 +39,7 @@ NSDictionary *_Nonnull BSGSanitizeDict(NSDictionary *input) {
     __block NSMutableDictionary *output =
         [NSMutableDictionary dictionaryWithCapacity:[input count]];
     [input enumerateKeysAndObjectsUsingBlock:^(id _Nonnull key, id _Nonnull obj,
-                                               BOOL *_Nonnull stop) {
+                                               __attribute__((unused)) BOOL *_Nonnull stop) {
       if ([key isKindOfClass:[NSString class]]) {
           id cleanedObject = BSGSanitizeObject(obj);
           if (cleanedObject)
@@ -56,26 +57,4 @@ NSArray *BSGSanitizeArray(NSArray *input) {
             [output addObject:cleanedObject];
     }
     return output;
-}
-
-NSDictionary *BSGDeserializeJson(char *json) {
-    if (json != NULL) {
-        NSString *str = [NSString stringWithCString:json encoding:NSUTF8StringEncoding];
-
-        if (str != nil) {
-            NSData *data = [str dataUsingEncoding:NSUTF8StringEncoding] ;
-            if (data != nil) {
-                NSError *error;
-                NSDictionary *decode = [NSJSONSerialization JSONObjectWithData:data
-                                                                       options:0
-                                                                         error:&error];
-                if (error != nil) {
-                    bsg_log_err(@"Failed to deserialize JSON: %@", error);
-                } else {
-                    return decode;
-                }
-            }
-        }
-    }
-    return nil;
 }

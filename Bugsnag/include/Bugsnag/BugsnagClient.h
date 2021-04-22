@@ -26,14 +26,23 @@
 
 #import <Foundation/Foundation.h>
 
-#import "BugsnagConfiguration.h"
-#import "BugsnagMetadata.h"
-#import "BugsnagMetadataStore.h"
+#import <Bugsnag/BugsnagConfiguration.h>
+#import <Bugsnag/BugsnagLastRunInfo.h>
+#import <Bugsnag/BugsnagMetadata.h>
+#import <Bugsnag/BugsnagMetadataStore.h>
 
 @class BugsnagSessionTracker;
 
+/**
+ * The BugsnagClient is not intended to be used directly.
+ * 
+ * Use the static access provided by the Bugsnag class instead.
+ */
 @interface BugsnagClient : NSObject<BugsnagMetadataStore>
 
+/**
+ * Initializes the client with the provided configuration.
+ */
 - (instancetype _Nonnull)initWithConfiguration:(BugsnagConfiguration *_Nonnull)configuration;
 
 // =============================================================================
@@ -196,12 +205,25 @@ NS_SWIFT_NAME(leaveBreadcrumb(_:metadata:type:));
 /**
  * Retrieves the context - a general summary of what was happening in the application
  */
- @property NSString *_Nullable context;
+ @property (copy, nullable) NSString *context;
 
 /**
  * @return YES if Bugsnag has been started and the previous launch crashed
  */
-- (BOOL)appDidCrashLastLaunch;
+- (BOOL)appDidCrashLastLaunch __attribute__((deprecated("use 'lastRunInfo.crashed' instead")));
+
+/**
+ * Information about the last run of the app, and whether it crashed.
+ */
+@property (readonly, nullable, nonatomic) BugsnagLastRunInfo *lastRunInfo;
+
+/**
+ * Tells Bugsnag that your app has finished launching.
+ *
+ * Errors reported after calling this method will have the `BugsnagAppWithState.isLaunching`
+ * property set to false.
+ */
+- (void)markLaunchCompleted;
 
 // =============================================================================
 // MARK: - User

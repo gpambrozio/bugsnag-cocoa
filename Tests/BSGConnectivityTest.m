@@ -1,17 +1,6 @@
 #import <XCTest/XCTest.h>
+
 #import "BSGConnectivity.h"
-
-BOOL BSGConnectivityShouldReportChange(SCNetworkReachabilityFlags flags);
-
-NSString *BSGConnectivityFlagRepresentation(SCNetworkReachabilityFlags flags);
-
-void BSGConnectivityCallback(SCNetworkReachabilityRef target,
-                                    SCNetworkReachabilityFlags flags);
-
-@interface BSGConnectivity ()
-
-+ (BOOL)isValidHostname:(NSString *)host;
-@end
 
 @interface BSGConnectivityTest : XCTestCase
 @end
@@ -52,10 +41,6 @@ void BSGConnectivityCallback(SCNetworkReachabilityRef target,
 - (void)mockMonitorURLWithCallback:(BSGConnectivityChangeBlock)block {
     [BSGConnectivity monitorURL:[NSURL URLWithString:@""]
                   usingCallback:block];
-}
-
-- (void)simulateConnectivityChangeTo:(SCNetworkReachabilityFlags) flags {
-    BSGConnectivityCallback(nil, flags);
 }
 
 @end

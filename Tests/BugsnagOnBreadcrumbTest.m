@@ -9,34 +9,21 @@
 #import <XCTest/XCTest.h>
 
 #import "Bugsnag.h"
-#import "BugsnagConfiguration.h"
+#import "BugsnagBreadcrumb+Private.h"
+#import "BugsnagClient+Private.h"
+#import "BugsnagConfiguration+Private.h"
 #import "BugsnagTestConstants.h"
 #import "BugsnagBreadcrumbs.h"
-
-@interface BugsnagClient ()
-@property(nonatomic, readwrite, retain) BugsnagConfiguration *_Nullable configuration;
-@property BugsnagBreadcrumbs *breadcrumbs;
-- (void)start;
-@end
-
-@interface Bugsnag ()
-+ (BugsnagClient *)client;
-+ (void)removeOnBreadcrumbBlock:(BugsnagOnBreadcrumbBlock _Nonnull)block;
-@end
-
-@interface BugsnagConfiguration ()
-@property NSMutableArray *onBreadcrumbBlocks;
-@end
-
-@interface BugsnagBreadcrumbs ()
-@property(nonatomic, readwrite, strong) NSMutableArray *breadcrumbs;
-@end
 
 @interface BugsnagOnBreadcrumbTest : XCTestCase
 @end
 
 @implementation BugsnagOnBreadcrumbTest
 
+- (void)setUp {
+    [super setUp];
+    [[[BugsnagBreadcrumbs alloc] initWithConfiguration:[[BugsnagConfiguration alloc] initWithApiKey:nil]] removeAllBreadcrumbs];
+}
 
 /**
  * Test that onBreadcrumb blocks get called once added
@@ -190,7 +177,7 @@
     BugsnagClient *client = [[BugsnagClient alloc] initWithConfiguration:config];
     [client start];
     XCTAssertEqual([[config onBreadcrumbBlocks] count], 1);
-    NSDictionary *crumb = [[client.breadcrumbs arrayValue] firstObject];
+    NSDictionary *crumb = [client.breadcrumbs.breadcrumbs.firstObject objectValue];
     XCTAssertEqualObjects(@"Foo", crumb[@"name"]);
 }
 

@@ -13,6 +13,12 @@
 #import <pthread.h>
 #import <stdlib.h>
 
+@interface NSObject (NeverGonnaBeImplemented)
+
+- (void)someRandomMethod;
+
+@end
+
 @implementation ViewController
 
 - (void)viewDidLoad {
@@ -63,7 +69,8 @@
  This method causes a low-level exception from the operating system to terminate the app.  Upon reopening the app this signal should be notified to your Bugsnag dashboard.
  */
 - (IBAction)generateMachException:(id)sender {
-    void (*ptr)(void) = NULL;
+    // This should result in an EXC_BAD_ACCESS mach exception with code = KERN_INVALID_ADDRESS and subcode = 0xDEADBEEF
+    void (* ptr)(void) = (void *)0xDEADBEEF;
     ptr();
 }
 
@@ -141,8 +148,12 @@
     NSArray *resultMessages = [NSMutableArray arrayWithObject: @"Error message!"];
     NSMutableArray *results = [[NSMutableArray alloc] init];
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wobjc-circular-container"
+#pragma clang diagnostic ignored "-Wunused-variable"
     for (NSObject *result in resultMessages)
         [results addObject: results]; // Whoops!
+#pragma clang diagnostic pop
 
     NSLog(@"Results: %@", results);
 }

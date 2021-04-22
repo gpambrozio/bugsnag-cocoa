@@ -1,11 +1,9 @@
 #import <XCTest/XCTest.h>
 
+#import <Bugsnag/Bugsnag.h>
 #import "BSGConfigurationBuilder.h"
-#import "BugsnagConfiguration.h"
+#import "BugsnagConfiguration+Private.h"
 #import "BugsnagTestConstants.h"
-#import "BugsnagEndpointConfiguration.h"
-#import "BugsnagErrorTypes.h"
-#import "BugsnagKeys.h"
 
 @interface BSGConfigurationBuilderTests : XCTestCase
 @end
@@ -15,8 +13,10 @@
 // MARK: - rejecting invalid plists
 
 - (void)testDecodeEmptyApiKey {
-    XCTAssertThrows([BSGConfigurationBuilder
-                     configurationFromOptions:@{@"apiKey": @""}]);
+    BugsnagConfiguration *configuration;
+    XCTAssertNoThrow(configuration = [BSGConfigurationBuilder configurationFromOptions:@{@"apiKey": @""}]);
+    XCTAssertEqualObjects(configuration.apiKey, @"");
+    XCTAssertThrows([configuration validate]);
 }
 
 - (void)testDecodeInvalidTypeApiKey {
@@ -25,8 +25,11 @@
 }
 
 - (void)testDecodeWithoutApiKey {
-    XCTAssertThrows([BSGConfigurationBuilder
-                     configurationFromOptions:@{@"autoDetectErrors": @NO}]);
+    BugsnagConfiguration *configuration;
+    XCTAssertNoThrow(configuration = [BSGConfigurationBuilder configurationFromOptions:@{@"autoDetectErrors": @NO}]);
+    XCTAssertNil(configuration.apiKey);
+    XCTAssertFalse(configuration.autoDetectErrors);
+    XCTAssertThrows([configuration validate]);
 }
 
 - (void)testDecodeUnknownKeys {
@@ -38,8 +41,7 @@
 }
 
 - (void)testDecodeEmptyOptions {
-    XCTAssertThrows([BSGConfigurationBuilder
-                     configurationFromOptions:@{}]);
+    XCTAssertNoThrow([BSGConfigurationBuilder configurationFromOptions:@{}]);
 }
 
 // MARK: - config loading
@@ -53,20 +55,21 @@
     XCTAssertNil(config.appVersion);
     XCTAssertTrue(config.autoDetectErrors);
     XCTAssertTrue(config.autoTrackSessions);
-    XCTAssertEqual(25, config.maxBreadcrumbs);
+    XCTAssertEqual(config.maxPersistedEvents, 32);
+    XCTAssertEqual(config.maxPersistedSessions, 128);
+    XCTAssertEqual(config.maxBreadcrumbs, 25);
     XCTAssertTrue(config.persistUser);
     XCTAssertEqualObjects(@[@"password"], [config.redactedKeys allObjects]);
     XCTAssertEqual(BSGThreadSendPolicyAlways, config.sendThreads);
     XCTAssertEqual(BSGEnabledBreadcrumbTypeAll, config.enabledBreadcrumbTypes);
     XCTAssertEqualObjects(@"https://notify.bugsnag.com", config.endpoints.notify);
     XCTAssertEqualObjects(@"https://sessions.bugsnag.com", config.endpoints.sessions);
+    XCTAssertTrue(config.enabledErrorTypes.ooms);
 
 #if DEBUG
     XCTAssertEqualObjects(@"development", config.releaseStage);
-    XCTAssertFalse(config.enabledErrorTypes.ooms);
 #else
     XCTAssertEqualObjects(@"production", config.releaseStage);
-    XCTAssertTrue(config.enabledErrorTypes.ooms);
 #endif
 
     XCTAssertNil(config.enabledReleaseStages);
@@ -91,6 +94,8 @@
                             @"sessions": @"https://sessions.example.co"
                     },
                     @"enabledReleaseStages": @[@"beta2", @"prod"],
+                    @"maxPersistedEvents": @29,
+                    @"maxPersistedSessions": @19,
                     @"maxBreadcrumbs": @27,
                     @"persistUser": @NO,
                     @"redactedKeys": @[@"foo"],
@@ -104,6 +109,8 @@
     XCTAssertFalse(config.autoDetectErrors);
     XCTAssertFalse(config.autoTrackSessions);
     XCTAssertEqualObjects(@"7.22", config.bundleVersion);
+    XCTAssertEqual(29, config.maxPersistedEvents);
+    XCTAssertEqual(19, config.maxPersistedSessions);
     XCTAssertEqual(27, config.maxBreadcrumbs);
     XCTAssertFalse(config.persistUser);
     XCTAssertEqualObjects(@[@"foo"], config.redactedKeys);
@@ -114,12 +121,7 @@
 
     NSArray *releaseStages = @[@"beta2", @"prod"];
     XCTAssertEqualObjects(releaseStages, config.enabledReleaseStages);
-
-#if DEBUG
-    XCTAssertFalse(config.enabledErrorTypes.ooms);
-#else
     XCTAssertTrue(config.enabledErrorTypes.ooms);
-#endif
 
     XCTAssertTrue(config.enabledErrorTypes.unhandledExceptions);
     XCTAssertTrue(config.enabledErrorTypes.signals);
@@ -142,6 +144,8 @@
                     @"endpoints": [NSNull null],
                     @"enabledReleaseStages": @[@"beta2", @"prod"],
                     @"enabledErrorTypes": @[@"ooms", @"signals"],
+                    @"maxPersistedEvents": @29,
+                    @"maxPersistedSessions": @19,
                     @"maxBreadcrumbs": @27,
                     @"persistUser": @"pomelo",
                     @"redactedKeys": @[@77],

@@ -123,29 +123,6 @@ void bsg_kscrash_setIntrospectMemory(bool introspectMemory);
 void bsg_kscrash_setCrashNotifyCallback(
     const BSGReportCallback onCrashNotify);
 
-/** Report a custom, user defined exception.
- * This can be useful when dealing with scripting languages.
- *
- * If terminateProgram is true, all sentries will be uninstalled and the
- * application will terminate with an abort().
- *
- * @param name The exception name (for namespacing exception types).
- * @param reason A description of why the exception occurred.
- * @param handledState The severity, reason, and handled-ness of the report
- * @param appState breadcrumbs and other app environmental info
- * @param overrides Report fields overridden by callbacks, collated in the
- *                  final report
- * @param metadata additional information to attach to the report
- */
-void bsg_kscrash_reportUserException(const char *name, const char *reason,
-                                     const char *severity,
-                                     const char *handledState,
-                                     const char *overrides,
-                                     const char *eventOverrides,
-                                     const char *metadata,
-                                     const char *appState,
-                                     const char *config);
-
 /** If YES, user reported exceptions even if a debugger is attached
  *
  * Default: NO
@@ -155,23 +132,10 @@ void bsg_kscrash_setReportWhenDebuggerIsAttached(
 
 void bsg_kscrash_setThreadTracingEnabled(bool threadTracingEnabled);
 
-void bsg_kscrash_setWriteBinaryImagesForUserReported(
-    bool writeBinaryImagesForUserReported);
-
 /**
  * The current crash context
  */
 BSG_KSCrash_Context *crashContext(void);
-
-/**
- * Captures a thread trace for the current application state, if the user
- * has configured this functionality.
- *
- * @param discardDepth - the number of stack frames to discard
- *
- * @return a trace of all the threads as a JSON string.
- */
-char *bsg_kscrash_captureThreadTrace(int discardDepth, int frameCount, uintptr_t *callstack, const bool recordAllThreads);
 
 #ifdef __cplusplus
 }

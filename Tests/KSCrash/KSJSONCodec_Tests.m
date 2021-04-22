@@ -64,7 +64,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -81,7 +81,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -98,7 +98,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -115,7 +115,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -132,7 +132,7 @@ static NSString* toString(NSData* data)
 //    XCTAssertNotNil(jsonString, @"");
 //    XCTAssertNil(error, @"");
 //    XCTAssertEqualObjects(jsonString, expected, @"");
-//    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+//    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
 //    XCTAssertNotNil(result, @"");
 //    XCTAssertNil(error, @"");
 //    XCTAssertEqualObjects(result, original, @"");
@@ -141,7 +141,7 @@ static NSString* toString(NSData* data)
 - (void) testSerializeDeserializeArrayFloat
 {
     NSError* error = (NSError*)self;
-    NSString* expected = @"[-0.2]";
+    NSString* expected = @"[-2e-1]";
     id original = @[@(-0.2f)];
     NSString* jsonString = toString([BSG_KSJSONCodec encode:original
                                                 options:BSG_KSJSONEncodeOptionSorted
@@ -149,7 +149,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqual([[result objectAtIndex:0] floatValue], -0.2f, @"");
@@ -168,7 +168,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqual([[result objectAtIndex:0] floatValue], -2e-15f, @"");
@@ -187,7 +187,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -204,7 +204,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -223,7 +223,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -245,7 +245,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, sorted, @"");
@@ -262,7 +262,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -279,7 +279,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -296,7 +296,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -313,7 +313,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -331,7 +331,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -348,7 +348,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -365,7 +365,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -382,7 +382,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -399,7 +399,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -408,7 +408,7 @@ static NSString* toString(NSData* data)
 - (void) testSerializeDeserializeDictionaryFloat
 {
     NSError* error = (NSError*)self;
-    NSString* expected = @"{\"One\":54.918}";
+    NSString* expected = @"{\"One\":5.4918e+1}";
     id original = @{@"One": @54.918F};
     NSString* jsonString = toString([BSG_KSJSONCodec encode:original
                                                 options:BSG_KSJSONEncodeOptionSorted
@@ -416,12 +416,106 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqual([((NSDictionary *) result)[@"One"] floatValue], 54.918f, @"");
     // This always fails on NSNumber filled with float.
     //XCTAssertEqualObjects(result, original, @"");
+}
+
+- (void) assertInt:(int64_t) value convertsTo:(NSString *)str
+{
+    NSError* error = (NSError*)self;
+    NSString* expected = [NSString stringWithFormat:@"{\"One\":%@}", str];
+    id original = @{@"One": @(value)};
+    NSString* jsonString = toString([BSG_KSJSONCodec encode:original
+                                                options:BSG_KSJSONEncodeOptionSorted
+                                                  error:&error]);
+    XCTAssertNotNil(jsonString, @"");
+    XCTAssertNil(error, @"");
+    XCTAssertEqualObjects(jsonString, expected, @"");
+}
+
+- (void) assertDouble:(double) value convertsTo:(NSString *)str
+{
+    NSError* error = (NSError*)self;
+    NSString* expected = [NSString stringWithFormat:@"{\"One\":%@}", str];
+    id original = @{@"One": @(value)};
+    NSString* jsonString = toString([BSG_KSJSONCodec encode:original
+                                                options:BSG_KSJSONEncodeOptionSorted
+                                                  error:&error]);
+    XCTAssertNotNil(jsonString, @"");
+    XCTAssertNil(error, @"");
+    XCTAssertEqualObjects(jsonString, expected, @"");
+}
+
+- (void) testIntConversions
+{
+    [self assertInt:0 convertsTo:@"0"];
+    [self assertInt:1 convertsTo:@"1"];
+    [self assertInt:-1 convertsTo:@"-1"];
+    [self assertInt:127 convertsTo:@"127"];
+    [self assertInt:-127 convertsTo:@"-127"];
+    [self assertInt:128 convertsTo:@"128"];
+    [self assertInt:-128 convertsTo:@"-128"];
+    [self assertInt:255 convertsTo:@"255"];
+    [self assertInt:-255 convertsTo:@"-255"];
+    [self assertInt:256 convertsTo:@"256"];
+    [self assertInt:-256 convertsTo:@"-256"];
+    [self assertInt:65535 convertsTo:@"65535"];
+    [self assertInt:-65535 convertsTo:@"-65535"];
+    [self assertInt:65536 convertsTo:@"65536"];
+    [self assertInt:-65536 convertsTo:@"-65536"];
+    [self assertInt:4294967295 convertsTo:@"4294967295"];
+    [self assertInt:-4294967295 convertsTo:@"-4294967295"];
+    [self assertInt:4294967296 convertsTo:@"4294967296"];
+    [self assertInt:-4294967296 convertsTo:@"-4294967296"];
+    [self assertInt:9223372036854775807ll convertsTo:@"9223372036854775807"];
+    // This gets incorrectly flagged as too large for int64
+    [self assertInt:-9223372036854775808ll convertsTo:@"-9223372036854775808"];
+}
+
+- (void) testFloatConversions
+{
+    [self assertDouble:100000000 convertsTo:@"1e+8"];
+    [self assertDouble:10000000 convertsTo:@"1e+7"];
+    [self assertDouble:1000000 convertsTo:@"1e+6"];
+    [self assertDouble:100000 convertsTo:@"1e+5"];
+    [self assertDouble:10000 convertsTo:@"1e+4"];
+    [self assertDouble:1000 convertsTo:@"1e+3"];
+    [self assertDouble:100 convertsTo:@"1e+2"];
+    [self assertDouble:10 convertsTo:@"1e+1"];
+    [self assertDouble:1 convertsTo:@"1"];
+    [self assertDouble:0.1 convertsTo:@"1e-1"];
+    [self assertDouble:0.01 convertsTo:@"1e-2"];
+    [self assertDouble:0.001 convertsTo:@"1e-3"];
+    [self assertDouble:0.0001 convertsTo:@"1e-4"];
+    [self assertDouble:0.00001 convertsTo:@"1e-5"];
+    [self assertDouble:0.000001 convertsTo:@"1e-6"];
+    [self assertDouble:0.0000001 convertsTo:@"1e-7"];
+    [self assertDouble:0.00000001 convertsTo:@"1e-8"];
+
+    [self assertDouble:1.2 convertsTo:@"1.2"];
+    [self assertDouble:0.12 convertsTo:@"1.2e-1"];
+    [self assertDouble:12 convertsTo:@"1.2e+1"];
+    [self assertDouble:9.5932455 convertsTo:@"9.593246"];
+    [self assertDouble:1.456e+80 convertsTo:@"1.456e+80"];
+    [self assertDouble:1.456e-80 convertsTo:@"1.456e-80"];
+    [self assertDouble:-1.456e+80 convertsTo:@"-1.456e+80"];
+    [self assertDouble:-1.456e-80 convertsTo:@"-1.456e-80"];
+    [self assertDouble:1.5e-10 convertsTo:@"1.5e-10"];
+    [self assertDouble:123456789123456789 convertsTo:@"1.234568e+17"];
+
+    [self assertDouble:NAN convertsTo:@"nan"];
+    [self assertDouble:INFINITY convertsTo:@"inf"];
+    [self assertDouble:-INFINITY convertsTo:@"-inf"];
+
+    // Check stepping over the 7 significant digit limit
+    [self assertDouble:9999999 convertsTo:@"9.999999e+6"];
+    [self assertDouble:99999994 convertsTo:@"9.999999e+7"];
+    [self assertDouble:99999995 convertsTo:@"1e+8"];
+    [self assertDouble:99999999 convertsTo:@"1e+8"];
 }
 
 - (void) testSerializeDeserializeDictionaryFloat2
@@ -435,7 +529,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqual([((NSDictionary *) result)[@"One"] floatValue], 5e20f, @"");
@@ -454,7 +548,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -473,7 +567,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -490,7 +584,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -507,7 +601,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -524,7 +618,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -541,7 +635,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -615,7 +709,7 @@ static NSString* toString(NSData* data)
                                                   error:&error]);
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -638,7 +732,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -649,7 +743,7 @@ static NSString* toString(NSData* data)
     NSError* error = (NSError*)self;
     NSString* json = @"[\"\u00dcOne\"]";
     NSString* expected = @"\u00dcOne";
-    NSArray* result = [BSG_KSJSONCodec decode:toData(json) options:0 error:&error];
+    NSArray* result = [BSG_KSJSONCodec decode:toData(json) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     NSString* value = result[0];
@@ -661,7 +755,7 @@ static NSString* toString(NSData* data)
     NSError* error = (NSError*)self;
     NSString* json = @"[\"\\u827e\\u5c0f\\u8587\"]";
     NSString* expected = @"\u827e\u5c0f\u8587";
-    NSArray* result = [BSG_KSJSONCodec decode:toData(json) options:0 error:&error];
+    NSArray* result = [BSG_KSJSONCodec decode:toData(json) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     NSString* value = result[0];
@@ -673,7 +767,7 @@ static NSString* toString(NSData* data)
     NSError* error = nil;
     NSString* json = @"[\"\\n\\u0000\\r\"]";
     NSString* expected = @"\n\x00\r";
-    NSArray* result = [BSG_KSJSONCodec decode:toData(json) options:0 error:&error];
+    NSArray* result = [BSG_KSJSONCodec decode:toData(json) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqual(1, result.count);
@@ -687,7 +781,7 @@ static NSString* toString(NSData* data)
     NSError* error = nil;
     NSString* json = @"[\"\\n\\u0008\\r\"]";
     NSString* expected = @"\n\b\r";
-    NSArray* result = [BSG_KSJSONCodec decode:toData(json) options:0 error:&error];
+    NSArray* result = [BSG_KSJSONCodec decode:toData(json) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqual(1, result.count);
@@ -701,7 +795,7 @@ static NSString* toString(NSData* data)
     NSError* error = (NSError*)self;
     NSString* json = @"[\"ABC\U00010323DEFGHIJ\"]";
     NSString* expected = @"ABC𐌣DEFGHIJ";
-    NSArray* result = [BSG_KSJSONCodec decode:toData(json) options:0 error:&error];
+    NSArray* result = [BSG_KSJSONCodec decode:toData(json) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     NSString* value = result[0];
@@ -713,7 +807,7 @@ static NSString* toString(NSData* data)
     NSError* error = nil;
     NSString* json = @"[\"G\\uD834\\uDD1E\"]";
     NSString* expected = @"G𝄞";
-    NSArray* result = [BSG_KSJSONCodec decode:toData(json) options:0 error:&error];
+    NSArray* result = [BSG_KSJSONCodec decode:toData(json) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     NSString* value = result[0];
@@ -724,7 +818,7 @@ static NSString* toString(NSData* data)
 {
     NSError* error = (NSError*)self;
     NSString* json = @"[\"ABC\\ud840DEFGHIJ\"]";
-    NSArray* result = [BSG_KSJSONCodec decode:toData(json) options:0 error:&error];
+    NSArray* result = [BSG_KSJSONCodec decode:toData(json) error:&error];
     XCTAssertNil(result, @"");
     XCTAssertNotNil(error, @"");
 }
@@ -733,7 +827,7 @@ static NSString* toString(NSData* data)
 {
     NSError* error = (NSError*)self;
     NSString* json = @"[\"ABC\\udf23DEFGHIJ\"]";
-    NSArray* result = [BSG_KSJSONCodec decode:toData(json) options:0 error:&error];
+    NSArray* result = [BSG_KSJSONCodec decode:toData(json) error:&error];
     XCTAssertNil(result, @"");
     XCTAssertNotNil(error, @"");
 }
@@ -742,7 +836,7 @@ static NSString* toString(NSData* data)
 {
     NSError* error = (NSError*)self;
     NSString* json = @"[\"ABC\\udf23\\u1234DEFGHIJ\"]";
-    NSArray* result = [BSG_KSJSONCodec decode:toData(json) options:0 error:&error];
+    NSArray* result = [BSG_KSJSONCodec decode:toData(json) error:&error];
     XCTAssertNil(result, @"");
     XCTAssertNotNil(error, @"");
 }
@@ -751,7 +845,7 @@ static NSString* toString(NSData* data)
 {
     NSError* error = (NSError*)self;
     NSString* json = @"[\"ABC\\udf23\"]";
-    NSArray* result = [BSG_KSJSONCodec decode:toData(json) options:0 error:&error];
+    NSArray* result = [BSG_KSJSONCodec decode:toData(json) error:&error];
     XCTAssertNil(result, @"");
     XCTAssertNotNil(error, @"");
 }
@@ -761,7 +855,7 @@ static NSString* toString(NSData* data)
     NSError* error = (NSError*)self;
     NSString* json = @"[\"\\b\\f\\n\\r\\t\"]";
     NSString* expected = @"\b\f\n\r\t";
-    NSArray* result = [BSG_KSJSONCodec decode:toData(json) options:0 error:&error];
+    NSArray* result = [BSG_KSJSONCodec decode:toData(json) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     NSString* value = result[0];
@@ -779,7 +873,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -796,7 +890,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -813,7 +907,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -830,7 +924,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertTrue([[result objectAtIndex:0] floatValue] ==  [[original objectAtIndex:0] floatValue], @"");
@@ -839,7 +933,7 @@ static NSString* toString(NSData* data)
 - (void) testSerializeDeserializeDouble
 {
     NSError* error = (NSError*)self;
-    NSString* expected = @"[0.1]";
+    NSString* expected = @"[1e-1]";
     id original = @[@0.1];
     NSString* jsonString = toString([BSG_KSJSONCodec encode:original
                                                 options:BSG_KSJSONEncodeOptionSorted
@@ -847,7 +941,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertTrue([[result objectAtIndex:0] floatValue] ==  [[original objectAtIndex:0] floatValue], @"");
@@ -864,7 +958,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -881,7 +975,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -898,7 +992,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -915,7 +1009,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -932,7 +1026,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -949,7 +1043,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -967,7 +1061,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -992,7 +1086,7 @@ static NSString* toString(NSData* data)
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(jsonString, expected, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -1012,7 +1106,7 @@ static NSString* toString(NSData* data)
                                                   error:&error]);
     XCTAssertNotNil(jsonString, @"");
     XCTAssertNil(error, @"");
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
     XCTAssertEqualObjects(result, original, @"");
@@ -1032,7 +1126,7 @@ static NSString* toString(NSData* data)
     [jsonString deleteCharactersInRange:NSMakeRange([jsonString length]-1, 1)];
     [jsonString appendString:@"]"];
 
-    NSArray* deserialized = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    NSArray* deserialized = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     unsigned int deserializedCount = (unsigned int)[deserialized count];
     XCTAssertNotNil(deserialized, @"");
     XCTAssertNil(error, @"");
@@ -1063,7 +1157,7 @@ static NSString* toString(NSData* data)
     [jsonString deleteCharactersInRange:NSMakeRange([jsonString length]-1, 1)];
     [jsonString appendString:@"}"];
 
-    NSDictionary* deserialized = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    NSDictionary* deserialized = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     unsigned int deserializedCount = (unsigned int)[deserialized count];
     XCTAssertNotNil(deserialized, @"");
     XCTAssertNil(error, @"");
@@ -1082,7 +1176,7 @@ static NSString* toString(NSData* data)
 {
     NSError* error = (NSError*)self;
     NSString* json = @"[\"blah\"";
-    NSArray* result = [BSG_KSJSONCodec decode:toData(json) options:0 error:&error];
+    NSArray* result = [BSG_KSJSONCodec decode:toData(json) error:&error];
     XCTAssertNil(result, @"");
     XCTAssertNotNil(error, @"");
 }
@@ -1226,7 +1320,7 @@ static NSString* toString(NSData* data)
 {
     NSError* error = (NSError*)self;
     NSString* jsonString = @"[\"One\\ubarfTwo\"]";
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNil(result, @"");
     XCTAssertNotNil(error, @"");
 }
@@ -1235,7 +1329,7 @@ static NSString* toString(NSData* data)
 {
     NSError* error = (NSError*)self;
     NSString* jsonString = @"[\"One\\u123gTwo\"]";
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNil(result, @"");
     XCTAssertNotNil(error, @"");
 }
@@ -1244,7 +1338,7 @@ static NSString* toString(NSData* data)
 {
     NSError* error = (NSError*)self;
     NSString* jsonString = @"[\"One\\u123\"]";
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNil(result, @"");
     XCTAssertNotNil(error, @"");
 }
@@ -1253,7 +1347,7 @@ static NSString* toString(NSData* data)
 {
     NSError* error = (NSError*)self;
     NSString* jsonString = @"[\"One\\\"]";
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNil(result, @"");
     XCTAssertNotNil(error, @"");
 }
@@ -1262,7 +1356,7 @@ static NSString* toString(NSData* data)
 {
     NSError* error = (NSError*)self;
     NSString* jsonString = @"[\"One\\u\"]";
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNil(result, @"");
     XCTAssertNotNil(error, @"");
 }
@@ -1271,7 +1365,7 @@ static NSString* toString(NSData* data)
 {
     NSError* error = (NSError*)self;
     NSString* jsonString = @"[\"One\\qTwo\"]";
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNil(result, @"");
     XCTAssertNotNil(error, @"");
 }
@@ -1280,7 +1374,7 @@ static NSString* toString(NSData* data)
 {
     NSError* error = (NSError*)self;
     NSString* jsonString = @"[\"One]";
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNil(result, @"");
     XCTAssertNotNil(error, @"");
 }
@@ -1289,7 +1383,7 @@ static NSString* toString(NSData* data)
 {
     NSError* error = (NSError*)self;
     NSString* jsonString = @"[f]";
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNil(result, @"");
     XCTAssertNotNil(error, @"");
 }
@@ -1298,7 +1392,7 @@ static NSString* toString(NSData* data)
 {
     NSError* error = (NSError*)self;
     NSString* jsonString = @"[falst]";
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNil(result, @"");
     XCTAssertNotNil(error, @"");
 }
@@ -1307,7 +1401,7 @@ static NSString* toString(NSData* data)
 {
     NSError* error = (NSError*)self;
     NSString* jsonString = @"[t]";
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNil(result, @"");
     XCTAssertNotNil(error, @"");
 }
@@ -1316,7 +1410,7 @@ static NSString* toString(NSData* data)
 {
     NSError* error = (NSError*)self;
     NSString* jsonString = @"[ture]";
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNil(result, @"");
     XCTAssertNotNil(error, @"");
 }
@@ -1325,7 +1419,7 @@ static NSString* toString(NSData* data)
 {
     NSError* error = (NSError*)self;
     NSString* jsonString = @"[n]";
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNil(result, @"");
     XCTAssertNotNil(error, @"");
 }
@@ -1334,7 +1428,7 @@ static NSString* toString(NSData* data)
 {
     NSError* error = (NSError*)self;
     NSString* jsonString = @"[nlll]";
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNil(result, @"");
     XCTAssertNotNil(error, @"");
 }
@@ -1343,7 +1437,7 @@ static NSString* toString(NSData* data)
 {
     NSError* error = (NSError*)self;
     NSString* jsonString = @"[-blah]";
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNil(result, @"");
     XCTAssertNotNil(error, @"");
 }
@@ -1352,7 +1446,7 @@ static NSString* toString(NSData* data)
 {
     NSError* error = (NSError*)self;
     NSString* jsonString = @"[\"blah\"";
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNil(result, @"");
     XCTAssertNotNil(error, @"");
 }
@@ -1361,7 +1455,7 @@ static NSString* toString(NSData* data)
 {
     NSError* error = (NSError*)self;
     NSString* jsonString = @"[123456789012345678901234567890]";
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
 }
@@ -1370,7 +1464,7 @@ static NSString* toString(NSData* data)
 {
     NSError* error = (NSError*)self;
     NSString* jsonString = @"{blah:\"blah\"}";
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNil(result, @"");
     XCTAssertNotNil(error, @"");
 }
@@ -1379,7 +1473,7 @@ static NSString* toString(NSData* data)
 {
     NSError* error = (NSError*)self;
     NSString* jsonString = @"{\"blah\"\"blah\"}";
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNil(result, @"");
     XCTAssertNotNil(error, @"");
 }
@@ -1388,7 +1482,7 @@ static NSString* toString(NSData* data)
 {
     NSError* error = (NSError*)self;
     NSString* jsonString = @"{\"blah\":blah\"}";
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNil(result, @"");
     XCTAssertNotNil(error, @"");
 }
@@ -1397,7 +1491,7 @@ static NSString* toString(NSData* data)
 {
     NSError* error = (NSError*)self;
     NSString* jsonString = @"{\"blah\":\"blah\"";
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNil(result, @"");
     XCTAssertNotNil(error, @"");
 }
@@ -1406,7 +1500,7 @@ static NSString* toString(NSData* data)
 {
     NSError* error = (NSError*)self;
     NSString* jsonString = @"X{\"blah\":\"blah\"}";
-    id result = [BSG_KSJSONCodec decode:toData(jsonString) options:0 error:&error];
+    id result = [BSG_KSJSONCodec decode:toData(jsonString) error:&error];
     XCTAssertNil(result, @"");
     XCTAssertNotNil(error, @"");
 }
@@ -1417,7 +1511,6 @@ static NSString* toString(NSData* data)
     NSString* json = @"[null]";
     id expected = [NSNull null];
     NSArray* result = [BSG_KSJSONCodec decode:toData(json)
-                                  options:0
                                     error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
@@ -1431,7 +1524,6 @@ static NSString* toString(NSData* data)
     NSString* json = @"[null]";
     id expected = [NSNull null];
     NSArray* result = [BSG_KSJSONCodec decode:toData(json)
-                                  options:BSG_KSJSONDecodeOptionIgnoreNullInObject
                                     error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
@@ -1445,7 +1537,6 @@ static NSString* toString(NSData* data)
     NSString* json = @"{\"blah\":null}";
     id expected = [NSNull null];
     NSArray* result = [BSG_KSJSONCodec decode:toData(json)
-                                  options:0
                                     error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
@@ -1459,7 +1550,6 @@ static NSString* toString(NSData* data)
     NSString* json = @"{\"blah\":null}";
     id expected = [NSNull null];
     NSArray* result = [BSG_KSJSONCodec decode:toData(json)
-                                  options:BSG_KSJSONDecodeOptionIgnoreNullInArray
                                     error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");
@@ -1481,7 +1571,6 @@ static NSString* toString(NSData* data)
     NSData *data = [NSData dataWithBytesNoCopy:buffer length:0x1000000 freeWhenDone:YES];
 
     NSDictionary *result = [BSG_KSJSONCodec decode: data
-                                    options:0
                                          error:&error];
     XCTAssertNotNil(result, @"");
     XCTAssertNil(error, @"");

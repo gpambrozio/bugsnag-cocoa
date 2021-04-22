@@ -95,6 +95,7 @@
 #define BSG_KSCrashField_Backtrace "backtrace"
 #define BSG_KSCrashField_Basic "basic"
 #define BSG_KSCrashField_Crashed "crashed"
+#define BSG_KSCrashField_CrashInfoMessage "crash_info_message"
 #define BSG_KSCrashField_CurrentThread "current_thread"
 #define BSG_KSCrashField_DispatchQueue "dispatch_queue"
 #define BSG_KSCrashField_NotableAddresses "notable_addresses"
@@ -145,7 +146,6 @@
 
 #define BSG_KSCrashField_ActiveTimeSinceCrash "active_time_since_last_crash"
 #define BSG_KSCrashField_ActiveTimeSinceLaunch "active_time_since_launch"
-#define BSG_KSCrashField_AppActive "application_active"
 #define BSG_KSCrashField_AppInFG "application_in_foreground"
 #define BSG_KSCrashField_BGTimeSinceCrash "background_time_since_last_crash"
 #define BSG_KSCrashField_BGTimeSinceLaunch "background_time_since_launch"
@@ -161,6 +161,7 @@
 #define BSG_KSCrashField_ProcessName "process_name"
 #define BSG_KSCrashField_Report "report"
 #define BSG_KSCrashField_Timestamp "timestamp"
+#define BSG_KSCrashField_Timestamp_Millis "timestamp_millis"
 #define BSG_KSCrashField_Version "version"
 
 #pragma mark Minimal

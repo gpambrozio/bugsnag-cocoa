@@ -24,6 +24,8 @@
 // THE SOFTWARE.
 //
 
+#import "BugsnagPlatformConditional.h"
+
 #include "BSG_KSMach.h"
 
 #include "BSG_KSMachApple.h"
@@ -35,6 +37,10 @@
 #include <mach-o/arch.h>
 #include <mach/mach_time.h>
 #include <sys/sysctl.h>
+
+#if __has_include(<os/proc.h>) && TARGET_OS_IPHONE && !TARGET_OS_MACCATALYST
+#include <os/proc.h>
+#endif
 
 // Avoiding static functions due to linker issues.
 
@@ -55,7 +61,33 @@ static pthread_t bsg_g_topThread;
 #pragma mark - General Information -
 // ============================================================================
 
+/**
+ * A pointer to `os_proc_available_memory` if it is available and usable.
+ *
+ * We cannot use the `__builtin_available` check at runtime because its
+ * implementation uses malloc() which is not async-signal-safe and can result in
+ * a deadlock if called from a crash handler or while threads are suspended.
+ */
+static size_t (* get_available_memory)(void);
+
+static void bsg_ksmachfreeMemory_init(void) {
+#if __has_include(<os/proc.h>) && TARGET_OS_IPHONE && !TARGET_OS_MACCATALYST
+    if (__builtin_available(iOS 13.0, tvOS 13.0, watchOS 6.0, *)) {
+        // Only use `os_proc_available_memory` if it appears to be working.
+        // 0 is returned if the calling process is not an app or is running
+        // on a Simulator, and may also erroneously be returned by some early
+        // implementations like iOS 13.0.
+        if (os_proc_available_memory()) {
+            get_available_memory = os_proc_available_memory;
+        }
+    }
+#endif
+}
+
 uint64_t bsg_ksmachfreeMemory(void) {
+    if (get_available_memory) {
+        return get_available_memory();
+    }
     vm_statistics_data_t vmStats;
     vm_size_t pageSize;
     if (bsg_ksmachi_VMStats(&vmStats, &pageSize)) {
@@ -153,6 +185,11 @@ const char *bsg_ksmachkernelReturnCodeName(const kern_return_t returnCode) {
         RETURN_NAME_FOR_ENUM(KERN_NOT_WAITING);
         RETURN_NAME_FOR_ENUM(KERN_OPERATION_TIMED_OUT);
         RETURN_NAME_FOR_ENUM(KERN_CODESIGN_ERROR);
+        // Note: these are only valid for EXC_BAD_ACCESS
+        RETURN_NAME_FOR_ENUM(EXC_ARM_DA_ALIGN);
+        RETURN_NAME_FOR_ENUM(EXC_ARM_DA_DEBUG);
+        RETURN_NAME_FOR_ENUM(EXC_ARM_SP_ALIGN);
+        RETURN_NAME_FOR_ENUM(EXC_ARM_SWP);
     }
     return NULL;
 }
@@ -169,6 +206,8 @@ bool bsg_ksmachfillState(const thread_t thread, const thread_state_t state,
 
     kr = thread_get_state(thread, flavor, state, &stateCountBuff);
     if (kr != KERN_SUCCESS) {
+        // When running under Rosetta 2, thread_get_state() sometimes fails
+        // with MACH_SEND_INVALID_DEST and returns no data.
         BSG_KSLOG_ERROR("thread_get_state: %s", mach_error_string(kr));
         return false;
     }
@@ -196,6 +235,9 @@ void bsg_ksmach_init(void) {
         }
         vm_deallocate(thisTask, (vm_address_t)threads,
                       sizeof(thread_t) * numThreads);
+        
+        bsg_ksmachfreeMemory_init();
+        
         initialized = true;
     }
 }
@@ -265,19 +307,20 @@ bool bsg_ksmachgetThreadQueueName(const thread_t thread, char *const buffer,
     }
 
     thread_identifier_info_t idInfo = (thread_identifier_info_t)info;
-    dispatch_queue_t *dispatch_queue_ptr =
-        (dispatch_queue_t *)idInfo->dispatch_qaddr;
+    dispatch_queue_t dispatch_queue = NULL;
     // thread_handle shouldn't be 0 also, because
     // identifier_info->dispatch_qaddr =  identifier_info->thread_handle +
     // get_dispatchqueue_offset_from_proc(thread->task->bsd_info);
-    if (dispatch_queue_ptr == NULL || idInfo->thread_handle == 0 ||
-        *dispatch_queue_ptr == NULL) {
+    if (!idInfo->dispatch_qaddr || !idInfo->thread_handle ||
+        // sometimes the queue address is invalid, so avoid dereferencing
+        bsg_ksmachcopyMem((const void *)idInfo->dispatch_qaddr, &dispatch_queue,
+                          sizeof(dispatch_queue)) != KERN_SUCCESS ||
+        !dispatch_queue) {
         BSG_KSLOG_TRACE(
             "This thread doesn't have a dispatch queue attached : %p", thread);
         return false;
     }
 
-    dispatch_queue_t dispatch_queue = *dispatch_queue_ptr;
     const char *queue_name = dispatch_queue_get_label(dispatch_queue);
     if (queue_name == NULL) {
         BSG_KSLOG_TRACE("Error while getting dispatch queue name : %p",
@@ -347,6 +390,8 @@ bool bsg_ksmachsuspendAllThreadsExcept(thread_t *exceptThreads,
                 // Don't treat this as a fatal error.
                 BSG_KSLOG_DEBUG("thread_suspend (%08x): %s", thread,
                                 mach_error_string(kr));
+                // Suppress dead store warning when log level > debug
+                (void)kr;
             }
         }
     }
@@ -386,6 +431,8 @@ bool bsg_ksmachresumeAllThreadsExcept(thread_t *exceptThreads,
                 // Don't treat this as a fatal error.
                 BSG_KSLOG_DEBUG("thread_resume (%08x): %s", thread,
                                  mach_error_string(kr));
+                // Suppress dead store warning when log level > debug
+                (void)kr;
             }
         }
     }
@@ -463,7 +510,7 @@ double bsg_ksmachtimeDifferenceInSeconds(const uint64_t endTime,
         conversion = 1e-9 * (double)info.numer / (double)info.denom;
     }
 
-    return conversion * (endTime - startTime);
+    return conversion * (double)(endTime - startTime);
 }
 
 /** Check if the current process is being traced or not.
