@@ -24,7 +24,7 @@
 /**
  Number of seconds in background required to make a new session
  */
-NSTimeInterval const BSGNewSessionBackgroundDuration = 30;
+static NSTimeInterval const BSGNewSessionBackgroundDuration = 30;
 
 NSString *const BSGSessionUpdateNotification = @"BugsnagSessionChanged";
 
@@ -48,7 +48,7 @@ NSString *const BSGSessionUpdateNotification = @"BugsnagSessionChanged";
 - (instancetype)initWithConfig:(BugsnagConfiguration *)config
                         client:(BugsnagClient *)client
             postRecordCallback:(void(^)(BugsnagSession *))callback {
-    if (self = [super init]) {
+    if ((self = [super init])) {
         _config = config;
         _client = client;
         _apiClient = [[BugsnagSessionTrackingApiClient alloc] initWithConfig:config queueName:@"Session API queue" notifier:client.notifier];
@@ -62,7 +62,7 @@ NSString *const BSGSessionUpdateNotification = @"BugsnagSessionChanged";
 
 - (void)setCodeBundleId:(NSString *)codeBundleId {
     _codeBundleId = codeBundleId;
-    _apiClient.codeBundleId = codeBundleId;
+    self.apiClient.codeBundleId = codeBundleId;
 }
 
 #pragma mark - Creating and sending a new session
@@ -195,14 +195,14 @@ NSString *const BSGSessionUpdateNotification = @"BugsnagSessionChanged";
 }
 
 - (void)handleAppForegroundEvent {
-    if (self.backgroundStartTime
-        && [[NSDate date] timeIntervalSinceDate:self.backgroundStartTime] >= BSGNewSessionBackgroundDuration) {
+    if (!self.currentSession ||
+        (self.backgroundStartTime && [[NSDate date] timeIntervalSinceDate:self.backgroundStartTime] >= BSGNewSessionBackgroundDuration)) {
         [self startNewSessionIfAutoCaptureEnabled];
     }
     self.backgroundStartTime = nil;
 }
 
-- (void)handleHandledErrorEvent {
+- (void)incrementEventCountUnhandled:(BOOL)unhandled {
     BugsnagSession *session = [self runningSession];
 
     if (session == nil) {
@@ -210,23 +210,11 @@ NSString *const BSGSessionUpdateNotification = @"BugsnagSessionChanged";
     }
 
     @synchronized (session) {
-        session.handledCount++;
-        if (self.callback) {
-            self.callback(session);
+        if (unhandled) {
+            session.unhandledCount++;
+        } else {
+            session.handledCount++;
         }
-        [self postUpdateNotice];
-    }
-}
-
-- (void)handleUnhandledErrorEvent {
-    BugsnagSession *session = [self runningSession];
-
-    if (session == nil) {
-        return;
-    }
-
-    @synchronized (session) {
-        session.unhandledCount++;
         if (self.callback) {
             self.callback(session);
         }

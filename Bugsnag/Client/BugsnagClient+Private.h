@@ -35,6 +35,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nullable, nonatomic) BugsnagEvent *appHangEvent;
 
+/// Alters whether error detection should be enabled or not after Bugsnag has been initialized.
+/// Intended for internal use only by Unity.
+@property (nonatomic) BOOL autoNotify;
+
 @property (nullable, retain, nonatomic) BugsnagBreadcrumbs *breadcrumbs;
 
 @property (nullable, nonatomic) NSString *codeBundleId;
@@ -70,8 +74,34 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (strong, nonatomic) BugsnagSessionTracker *sessionTracker; // Used in BugsnagReactNative
 
-@property (readonly, nonatomic) BOOL started;
+@property (nonatomic) BOOL started;
 
+/// State related metadata
+///
+/// Upon change this is automatically persisted to disk, making it available when contructing OOM payloads.
+/// Is it also added to KSCrashReports under `user.state` by `BSSerializeDataCrashHandler()`.
+///
+/// Example contents:
+///
+/// {
+///     "app": {
+///         "codeBundleId": "com.example.app",
+///         "isLaunching": true
+///     },
+///     "client": {
+///         "context": "MyViewController",
+///     },
+///     "deviceState": {
+///         "batteryLevel": 0.5,
+///         "charging": false,
+///         "lowMemoryWarning": "2021-01-01T15:29:02.170Z",
+///         "orientation": "portrait"
+///     },
+///     "user": {
+///         "id": "abc123",
+///         "name": "bob"
+///     }
+/// }
 @property (strong, nonatomic) BugsnagMetadata *state;
 
 @property (strong, nonatomic) NSMutableArray *stateEventBlocks;

@@ -17,6 +17,11 @@
 BugsnagStackframeType const BugsnagStackframeTypeCocoa = @"cocoa";
 
 
+static NSString * _Nullable FormatMemoryAddress(NSNumber * _Nullable address) {
+    return address == nil ? nil : [NSString stringWithFormat:@"0x%" PRIxPTR, address.unsignedLongValue];
+}
+
+
 // MARK: - Properties not used for Cocoa stack frames, but used by React Native and Unity.
 
 @interface BugsnagStackframe ()
@@ -102,26 +107,8 @@ BugsnagStackframeType const BugsnagStackframeTypeCocoa = @"cocoa";
             // It's not a valid stack frame and causes E2E tests to fail, so should be ignored.
             continue;
         }
-
-        BugsnagStackframe *stackframes = [[BugsnagStackframe alloc] init];
-        stackframes.frameAddress = @(address);
-        stackframes.isPc = i == 0;
         
-        Dl_info dl_info = {0};
-        if (dladdr((const void *)address, &dl_info)) {
-            stackframes.machoFile = dl_info.dli_fname ? @(dl_info.dli_fname) : nil;
-            stackframes.machoLoadAddress = @((uintptr_t)dl_info.dli_fbase);
-            stackframes.symbolAddress = dl_info.dli_saddr ? @((uintptr_t)dl_info.dli_saddr) : nil;
-            stackframes.method = dl_info.dli_sname ? @(dl_info.dli_sname) : nil;
-        }
-        
-        BSG_Mach_Header_Info *header = bsg_mach_headers_image_at_address(address);
-        if (header) {
-            stackframes.machoVmAddress = @(header->imageVmAddr);
-            stackframes.machoUuid = header->uuid ? [[NSUUID alloc] initWithUUIDBytes:header->uuid].UUIDString : nil;
-        }
-        
-        [frames addObject:stackframes];
+        [frames addObject:[[BugsnagStackframe alloc] initWithAddress:address isPc:i == 0]];
     }
     
     return frames;
@@ -179,41 +166,29 @@ BugsnagStackframeType const BugsnagStackframeTypeCocoa = @"cocoa";
             sscanf(frameAddress.UTF8String, "%lx", &address);
         }
         
-        BugsnagStackframe *frame = [BugsnagStackframe new];
+        BugsnagStackframe *frame = [[BugsnagStackframe alloc] initWithAddress:address isPc:[frameNumber isEqualToString:@"0"]];
         frame.machoFile = imageName;
         frame.method = symbolName ?: frameAddress;
-        frame.frameAddress = [NSNumber numberWithUnsignedLongLong:address];
-        frame.isPc = [frameNumber isEqualToString:@"0"];
-        
-        Dl_info dl_info;
-        bsg_ksbt_symbolicate(&address, &dl_info, 1, 0);
-        if (dl_info.dli_fname != NULL) {
-            frame.machoFile = [NSString stringWithUTF8String:dl_info.dli_fname].lastPathComponent;
-        }
-        if (dl_info.dli_fbase != NULL) {
-            frame.machoLoadAddress = [NSNumber numberWithUnsignedLongLong:(uintptr_t)dl_info.dli_fbase];
-        }
-        if (dl_info.dli_saddr != NULL) {
-            frame.symbolAddress = [NSNumber numberWithUnsignedLongLong:(uintptr_t)dl_info.dli_saddr];
-        }
-        if (dl_info.dli_sname != NULL) {
-            frame.method = [NSString stringWithUTF8String:dl_info.dli_sname];
-        }
-        
-        BSG_Mach_Header_Info *header = bsg_mach_headers_image_at_address(address);
-        if (header != NULL) {
-            frame.machoVmAddress = [NSNumber numberWithUnsignedLongLong:header->imageVmAddr];
-            if (header->uuid != nil) {
-                CFUUIDRef uuidRef = CFUUIDCreateFromUUIDBytes(NULL, *(CFUUIDBytes *)header->uuid);
-                frame.machoUuid = (__bridge_transfer NSString *)CFUUIDCreateString(NULL, uuidRef);
-                CFRelease(uuidRef);
-            }
-        }
-        
         [frames addObject:frame];
     }
     
     return [NSArray arrayWithArray:frames];
+}
+
+- (instancetype)initWithAddress:(uintptr_t)address isPc:(BOOL)isPc {
+    if ((self = [super init])) {
+        _frameAddress = @(address);
+        _isPc = isPc;
+        _needsSymbolication = YES;
+        BSG_Mach_Header_Info *header = bsg_mach_headers_image_at_address(address);
+        if (header) {
+            _machoFile = header->name ? @(header->name) : nil;
+            _machoLoadAddress = @((uintptr_t)header->header);
+            _machoVmAddress = @(header->imageVmAddr);
+            _machoUuid = header->uuid ? [[NSUUID alloc] initWithUUIDBytes:header->uuid].UUIDString : nil;
+        }
+    }
+    return self;
 }
 
 - (NSString *)description {
@@ -221,28 +196,40 @@ BugsnagStackframeType const BugsnagStackframeTypeCocoa = @"cocoa";
             self.machoFile.lastPathComponent, (void *)self.frameAddress.unsignedLongLongValue, self.method];
 }
 
+- (void)symbolicateIfNeeded {
+    if (!self.needsSymbolication) {
+        return;
+    }
+    self.needsSymbolication = NO;
+    
+    Dl_info info = {0};
+    if (!dladdr((const void *)self.frameAddress.unsignedIntegerValue, &info)) {
+        return;
+    }
+    if (info.dli_sname) {
+        self.method = @(info.dli_sname);
+    }
+    if (info.dli_saddr) {
+        self.symbolAddress = @((uintptr_t)info.dli_saddr);
+    }
+    // Just in case these were not found via bsg_mach_headers_image_at_address()
+    if (info.dli_fname && !self.machoFile) {
+        self.machoFile = @(info.dli_fname);
+    }
+    if (info.dli_fbase && self.machoLoadAddress == nil) {
+        self.machoLoadAddress = @((uintptr_t)info.dli_fbase);
+    }
+}
+
 - (NSDictionary *)toDictionary {
     NSMutableDictionary *dict = [NSMutableDictionary new];
     dict[BSGKeyMachoFile] = self.machoFile;
     dict[BSGKeyMethod] = self.method;
     dict[BSGKeyMachoUUID] = self.machoUuid;
-
-    if (self.frameAddress != nil) {
-        NSString *frameAddr = [NSString stringWithFormat:BSGKeyFrameAddrFormat, [self.frameAddress unsignedLongValue]];
-        dict[BSGKeyFrameAddress] = frameAddr;
-    }
-    if (self.symbolAddress != nil) {
-        NSString *symbolAddr = [NSString stringWithFormat:BSGKeyFrameAddrFormat, [self.symbolAddress unsignedLongValue]];
-        dict[BSGKeySymbolAddr] = symbolAddr;
-    }
-    if (self.machoLoadAddress != nil) {
-        NSString *imageAddr = [NSString stringWithFormat:BSGKeyFrameAddrFormat, [self.machoLoadAddress unsignedLongValue]];
-        dict[BSGKeyMachoLoadAddr] = imageAddr;
-    }
-    if (self.machoVmAddress != nil) {
-        NSString *vmAddr = [NSString stringWithFormat:BSGKeyFrameAddrFormat, [self.machoVmAddress unsignedLongValue]];
-        dict[BSGKeyMachoVMAddress] = vmAddr;
-    }
+    dict[BSGKeyFrameAddress] = FormatMemoryAddress(self.frameAddress);
+    dict[BSGKeySymbolAddr] = FormatMemoryAddress(self.symbolAddress);
+    dict[BSGKeyMachoLoadAddr] = FormatMemoryAddress(self.machoLoadAddress);
+    dict[BSGKeyMachoVMAddress] = FormatMemoryAddress(self.machoVmAddress);
     if (self.isPc) {
         dict[BSGKeyIsPC] = @(self.isPc);
     }

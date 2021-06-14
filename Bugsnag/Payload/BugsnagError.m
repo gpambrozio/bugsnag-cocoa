@@ -19,9 +19,9 @@
 
 typedef NSString * BSGErrorTypeString NS_TYPED_ENUM;
 
-BSGErrorTypeString const BSGErrorTypeStringCocoa = @"cocoa";
-BSGErrorTypeString const BSGErrorTypeStringC = @"c";
-BSGErrorTypeString const BSGErrorTypeStringReactNativeJs = @"reactnativejs";
+static BSGErrorTypeString const BSGErrorTypeStringCocoa = @"cocoa";
+static BSGErrorTypeString const BSGErrorTypeStringC = @"c";
+static BSGErrorTypeString const BSGErrorTypeStringReactNativeJs = @"reactnativejs";
 
 
 NSString *_Nonnull BSGSerializeErrorType(BSGErrorType errorType) {
@@ -83,12 +83,8 @@ NSString *BSGParseErrorMessage(NSDictionary *report, NSDictionary *error, NSStri
 
 @dynamic type;
 
-- (instancetype)initWithErrorReportingThread:(BugsnagThread *)thread {
-    return [self initWithEvent:@{} errorReportingThread:thread];
-}
-
-- (instancetype)initWithEvent:(NSDictionary *)event errorReportingThread:(BugsnagThread *)thread {
-    if (self = [super init]) {
+- (instancetype)initWithKSCrashReport:(NSDictionary *)event stacktrace:(NSArray<BugsnagStackframe *> *)stacktrace {
+    if ((self = [super init])) {
         NSDictionary *error = [event valueForKeyPath:@"crash.error"];
         NSString *errorType = error[BSGKeyType];
         _errorClass = BSGParseErrorClass(error, errorType);
@@ -96,7 +92,7 @@ NSString *BSGParseErrorMessage(NSDictionary *report, NSDictionary *error, NSStri
         _typeString = BSGSerializeErrorType(BSGErrorTypeCocoa);
 
         if (![[event valueForKeyPath:@"user.state.didOOM"] boolValue]) {
-            _stacktrace = thread.stacktrace;
+            _stacktrace = stacktrace;
         }
     }
     return self;
@@ -106,7 +102,7 @@ NSString *BSGParseErrorMessage(NSDictionary *report, NSDictionary *error, NSStri
                       errorMessage:(NSString *)errorMessage
                          errorType:(BSGErrorType)errorType
                         stacktrace:(NSArray<BugsnagStackframe *> *)stacktrace {
-    if (self = [super init]) {
+    if ((self = [super init])) {
         _errorClass = errorClass;
         _errorMessage = errorMessage;
         _typeString = BSGSerializeErrorType(errorType);

@@ -5,9 +5,8 @@
 //  Created by Robin Macharg on 22/05/2020.
 //
 
-#import <Foundation/Foundation.h>
+#import "BugsnagKeys.h"
 
-NSString *const BSGDefaultNotifyUrl = @"https://notify.bugsnag.com/";
 NSString *const BSGKeyAction = @"action";
 NSString *const BSGKeyApiKey = @"apiKey";
 NSString *const BSGKeyApp = @"app";
@@ -20,6 +19,7 @@ NSString *const BSGKeyBatteryLevel = @"batteryLevel";
 NSString *const BSGKeyBreadcrumbs = @"breadcrumbs";
 NSString *const BSGKeyBundleVersion = @"bundleVersion";
 NSString *const BSGKeyCharging = @"charging";
+NSString *const BSGKeyClient = @"client";
 NSString *const BSGKeyCodeBundleId = @"codeBundleId";
 NSString *const BSGKeyConfig = @"config";
 NSString *const BSGKeyContext = @"context";
@@ -36,10 +36,8 @@ NSString *const BSGKeyEvents = @"events";
 NSString *const BSGKeyException = @"exception";
 NSString *const BSGKeyExceptionName = @"exception_name";
 NSString *const BSGKeyExceptions = @"exceptions";
-NSString *const BSGKeyExecutableName = @"CFBundleExecutable";
 NSString *const BSGKeyExtraRuntimeInfo = @"extraRuntimeInfo";
 NSString *const BSGKeyFrameAddress = @"frameAddress";
-NSString *const BSGKeyFrameAddrFormat = @"0x%lx";
 NSString *const BSGKeyGroupingHash = @"groupingHash";
 NSString *const BSGKeyId = @"id";
 NSString *const BSGKeyImageAddress = @"image_addr";

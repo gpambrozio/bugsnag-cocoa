@@ -345,7 +345,7 @@ int bsg_ksjsoncodec_i_appendEscapedString(
             // see https://www.ietf.org/rfc/rfc4627.txt
 
             if ((unsigned char)*src < ' ') {
-                unsigned int last = *src % 16;
+                unsigned int last = (unsigned int)*src % 16;
                 unsigned int first = ((unsigned int)*src - last) / 16;
 
                 *dst++ = '\\';
@@ -552,7 +552,7 @@ int bsg_ksjsonaddJSONElement(BSG_KSJSONEncodeContext *const context,
     case '9':
         break;
     default:
-        BSG_KSLOG_ERROR("Invalid character '%c' in: ", element[idx], element);
+        BSG_KSLOG_ERROR("Invalid character '%c' in: ", element[idx]);
         return BSG_KSJSON_ERROR_INVALID_DATA;
     }
 
@@ -619,8 +619,8 @@ int bsg_ksjsonbeginDataElement(BSG_KSJSONEncodeContext *const context,
 
 int bsg_ksjsonappendDataElement(BSG_KSJSONEncodeContext *const context,
                                 const char *const value, size_t length) {
-    unsigned char *currentByte = (unsigned char *)value;
-    unsigned char *end = currentByte + length;
+    const unsigned char *currentByte = (const unsigned char *)value;
+    const unsigned char *end = currentByte + length;
     char chars[2];
     int result = BSG_KSJSON_OK;
     while (currentByte < end) {

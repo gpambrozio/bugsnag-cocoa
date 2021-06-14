@@ -14,10 +14,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface BugsnagError ()
 
-- (instancetype)initWithEvent:(NSDictionary *)event errorReportingThread:(nullable BugsnagThread *)thread;
+- (instancetype)initWithKSCrashReport:(NSDictionary *)event stacktrace:(NSArray<BugsnagStackframe *> *)stacktrace;
 
 - (instancetype)initWithErrorClass:(NSString *)errorClass
-                      errorMessage:(NSString *)errorMessage
+                      errorMessage:(nullable NSString *)errorMessage
                          errorType:(BSGErrorType)errorType
                         stacktrace:(nullable NSArray<BugsnagStackframe *> *)stacktrace;
 

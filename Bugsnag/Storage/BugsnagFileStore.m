@@ -51,7 +51,7 @@
 }
 
 - (NSComparisonResult)compare:(BSGFileStoreInfo *)other {
-    return [_creationDate compare:other->_creationDate];
+    return [self.creationDate compare:other.creationDate];
 }
 
 @end
@@ -230,7 +230,7 @@
 - (NSMutableDictionary *)readFile:(NSString *)path
                             error:(NSError *__autoreleasing *)error {
     if (path == nil) {
-        [NSError bsg_fillError:error
+        [NSErrorBSG bsg_fillError:error
                     withDomain:[[self class] description]
                           code:0
                    description:@"Path is nil"];

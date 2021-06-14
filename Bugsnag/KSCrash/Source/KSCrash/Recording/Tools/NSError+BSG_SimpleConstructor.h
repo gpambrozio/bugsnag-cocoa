@@ -29,7 +29,7 @@
 /**
  * Simpler interface for constructing NSError objects.
  */
-@interface NSError (BSG_SimpleConstructor)
+@interface NSErrorBSG: NSError
 
 /** Convenience constructor to make an error with the specified localized
  * description.
@@ -40,8 +40,8 @@
  * key NSLocalizedDescriptionKey).
  */
 + (NSError *)bsg_errorWithDomain:(NSString *)domain
-                        code:(NSInteger)code
-                 description:(NSString *)fmt, ...;
+                            code:(NSInteger)code
+                     description:(NSString *)fmt, ... NS_FORMAT_FUNCTION(3, 4);
 
 /** Fill an error pointer with an NSError object if it's not nil.
  *
@@ -55,6 +55,6 @@
 + (BOOL)bsg_fillError:(NSError **)error
            withDomain:(NSString *)domain
                  code:(NSInteger)code
-          description:(NSString *)fmt, ...;
+          description:(NSString *)fmt, ... NS_FORMAT_FUNCTION(4, 5);
 
 @end

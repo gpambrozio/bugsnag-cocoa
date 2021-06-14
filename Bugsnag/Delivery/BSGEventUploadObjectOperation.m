@@ -8,19 +8,20 @@
 
 #import "BSGEventUploadObjectOperation.h"
 
-#import "BugsnagEvent.h"
+#import "BugsnagEvent+Private.h"
 #import "BugsnagLogger.h"
 
 @implementation BSGEventUploadObjectOperation
 
 - (instancetype)initWithEvent:(BugsnagEvent *)event delegate:(id<BSGEventUploadOperationDelegate>)delegate {
-    if (self = [super initWithDelegate:delegate]) {
+    if ((self = [super initWithDelegate:delegate])) {
         _event = event;
     }
     return self;
 }
 
 - (BugsnagEvent *)loadEventAndReturnError:(__attribute__((unused)) NSError * __autoreleasing *)errorPtr {
+    [self.event symbolicateIfNeeded];
     return self.event;
 }
 

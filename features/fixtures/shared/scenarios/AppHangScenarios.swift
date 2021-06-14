@@ -6,6 +6,10 @@
 //  Copyright © 2021 Bugsnag Inc. All rights reserved.
 //
 
+#if os(iOS)
+import UIKit
+#endif
+
 class AppHangScenario: Scenario {
     
     override func startBugsnag() {
@@ -14,6 +18,7 @@ class AppHangScenario: Scenario {
     }
     
     override func run() {
+        Bugsnag.setContext("App Hang Scenario")
         let timeInterval = TimeInterval(eventMode!)!
         NSLog("Simulating an app hang of \(timeInterval) seconds...")
         Thread.sleep(forTimeInterval: timeInterval)

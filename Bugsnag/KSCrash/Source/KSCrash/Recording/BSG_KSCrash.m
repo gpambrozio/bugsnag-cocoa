@@ -51,18 +51,9 @@
 #endif
 
 // ============================================================================
-#pragma mark - Default Constants -
-// ============================================================================
-
-#ifndef BSG_INITIAL_MACH_BINARY_IMAGE_ARRAY_SIZE
-#define BSG_INITIAL_MACH_BINARY_IMAGE_ARRAY_SIZE 400
-#endif
-
-// ============================================================================
 #pragma mark - Constants -
 // ============================================================================
 
-#define BSG_kCrashLogFilenameSuffix "-CrashLog.txt"
 #define BSG_kCrashStateFilenameSuffix "-CrashState.json"
 
 // ============================================================================
@@ -71,7 +62,6 @@
 
 @interface BSG_KSCrash ()
 
-@property(nonatomic, readwrite, retain) NSString *bundleName;
 @property(nonatomic, readwrite, retain) NSString *nextCrashID;
 
 // Mirrored from BSG_KSCrashAdvanced.h to provide ivars
@@ -89,10 +79,8 @@
 // ============================================================================
 
 @synthesize userInfo = _userInfo;
-@synthesize handlingCrashTypes = _handlingCrashTypes;
 @synthesize printTraceToStdout = _printTraceToStdout;
 @synthesize onCrash = _onCrash;
-@synthesize bundleName = _bundleName;
 @synthesize logFilePath = _logFilePath;
 @synthesize nextCrashID = _nextCrashID;
 @synthesize introspectMemory = _introspectMemory;
@@ -115,7 +103,6 @@
 
 - (instancetype)init {
     if ((self = [super init])) {
-        self.bundleName = [[NSBundle mainBundle] infoDictionary][@"CFBundleName"];
         self.nextCrashID = [NSUUID UUID].UUIDString;
         self.introspectMemory = YES;
         self.maxStoredReports = 5;
@@ -146,10 +133,6 @@
     bsg_kscrash_setUserInfoJSON([userInfoJSON bytes]);
 }
 
-- (void)setHandlingCrashTypes:(BSG_KSCrashType)handlingCrashTypes {
-    _handlingCrashTypes = bsg_kscrash_setHandlingCrashTypes(handlingCrashTypes);
-}
-
 - (void)setPrintTraceToStdout:(bool)printTraceToStdout {
     _printTraceToStdout = printTraceToStdout;
     bsg_kscrash_setPrintTraceToStdout(printTraceToStdout);
@@ -175,23 +158,23 @@
     bsg_kscrash_setThreadTracingEnabled(threadTracingEnabled);
 }
 
-- (BOOL)install:(NSString *)directory {
-    bsg_kscrash_generate_report_initialize(directory.fileSystemRepresentation, self.bundleName.UTF8String);
-    char *crashReportPath = (char *)bsg_kscrash_generate_report_path(self.nextCrashID.UTF8String, false);
-    char *recrashReportPath = (char *)bsg_kscrash_generate_report_path(self.nextCrashID.UTF8String, true);
+- (BSG_KSCrashType)install:(BSG_KSCrashType)crashTypes directory:(NSString *)directory {
+    bsg_kscrash_generate_report_initialize(directory.fileSystemRepresentation);
+    char *crashReportPath = bsg_kscrash_generate_report_path(self.nextCrashID.UTF8String, false);
+    char *recrashReportPath = bsg_kscrash_generate_report_path(self.nextCrashID.UTF8String, true);
+    NSString *stateFilePrefix = [[NSBundle mainBundle] infoDictionary][@"CFBundleName"]
+    /* Not all processes have an Info.plist */ ?: NSProcessInfo.processInfo.processName;
     NSString *stateFilePath = [directory stringByAppendingPathComponent:
-                               [self.bundleName stringByAppendingString:@BSG_kCrashStateFilenameSuffix]];
+                               [stateFilePrefix stringByAppendingString:@BSG_kCrashStateFilenameSuffix]];
     
-    self.handlingCrashTypes = bsg_kscrash_install(
+    bsg_kscrash_setHandlingCrashTypes(crashTypes);
+    
+    BSG_KSCrashType installedCrashTypes = bsg_kscrash_install(
         crashReportPath, recrashReportPath,
         [stateFilePath UTF8String], [self.nextCrashID UTF8String]);
     
     free(crashReportPath);
     free(recrashReportPath);
-    
-    if (self.handlingCrashTypes == 0) {
-        return false;
-    }
     
     NSNotificationCenter *nCenter = [NSNotificationCenter defaultCenter];
 #if BSG_HAS_UIKIT
@@ -231,7 +214,7 @@
                   object:nil];
 #endif
 
-    return true;
+    return installedCrashTypes;
 }
 
 - (NSDictionary *)captureAppStats {

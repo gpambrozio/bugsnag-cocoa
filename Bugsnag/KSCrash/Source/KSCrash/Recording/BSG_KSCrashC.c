@@ -98,11 +98,6 @@ BSG_KSCrashType bsg_kscrash_install(const char *const crashReportFilePath,
 
     BSG_KSCrash_Context *context = crashContext();
     
-    // Initialize local store of dynamically loaded libraries so that binary
-    // image information can be extracted for reports
-    bsg_mach_headers_initialize();
-    bsg_mach_headers_register_for_changes();
-    
     if (bsg_g_installed) {
         BSG_KSLOG_DEBUG("Crash reporter already installed.");
         return context->config.handlingCrashTypes;
@@ -137,12 +132,12 @@ void bsg_kscrash_reinstall(const char *const crashReportFilePath,
     BSG_KSLOG_TRACE("stateFilePath = %s", stateFilePath);
     BSG_KSLOG_TRACE("crashID = %s", crashID);
 
-    bsg_ksstring_replace((const char **)&bsg_g_stateFilePath, stateFilePath);
+    bsg_ksstring_replace(&bsg_g_stateFilePath, stateFilePath);
 
     BSG_KSCrash_Context *context = crashContext();
-    bsg_ksstring_replace((const char **)&context->config.crashReportFilePath,
+    bsg_ksstring_replace(&context->config.crashReportFilePath,
                          crashReportFilePath);
-    bsg_ksstring_replace((const char **)&context->config.recrashReportFilePath,
+    bsg_ksstring_replace(&context->config.recrashReportFilePath,
                          recrashReportFilePath);
     bsg_ksstring_replace(&context->config.crashID, crashID);
 

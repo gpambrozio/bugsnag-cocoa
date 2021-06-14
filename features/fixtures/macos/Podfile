@@ -1,15 +1,7 @@
-# Uncomment the next line to define a global platform for your project
-# platform :ios, '9.0'
-
-target 'iOSTestApp' do
-  platform :ios, '9.3'
-
-  # Comment the next line if you're not using Swift and don't want to use dynamic frameworks
+target 'macOSTestApp' do
+  platform :osx, '10.11'
   use_frameworks!
-
-  # Pods for iOSTestApp
   pod 'Bugsnag', path: '../../..'
-
 end
 
 post_install do |installer|
@@ -18,6 +10,12 @@ post_install do |installer|
       target.build_configurations.each do |config|
         config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)', 'BSG_LOG_LEVEL=BSG_LOGLEVEL_DEBUG']
         config.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'YES'
+
+        # Include all our build warning settings without needing to duplicate them here
+        xcconfig = "Pods/Target Support Files/#{target.name}/#{target.name}.#{config.name.downcase}.xcconfig"
+        File.open(xcconfig, 'a') do |file|
+          file << '#include "../../../../../../Bugsnag.xcconfig"'
+        end
       end
     end
   end

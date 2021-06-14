@@ -38,6 +38,7 @@ class BareboneTestHandledScenario: Scenario {
             return true
         }
         config.enabledBreadcrumbTypes = [.error]
+        config.autoDetectErrors = false
         config.addMetadata(["Testing": true], section: "Flags")
         config.addMetadata(["password": "123456"], section: "Other")
         config.launchDurationMillis = 0
@@ -116,6 +117,7 @@ class BareboneTestUnhandledErrorScenario: Scenario {
     }
     
     override func run() {
+        Bugsnag.setContext("Something")
         Bugsnag.setUser("barfoo", withEmail: "barfoo@example.com", andName: "Bar Foo")
         
         // Triggers "Fatal error: Unexpectedly found nil while implicitly unwrapping an Optional value: ..."

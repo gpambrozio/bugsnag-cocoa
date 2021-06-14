@@ -6,12 +6,8 @@
 //  Copyright © 2017 Bugsnag. All rights reserved.
 //
 
-#ifndef BugsnagKeys_h
-#define BugsnagKeys_h
-
 #import <Foundation/Foundation.h>
 
-extern NSString *const BSGDefaultNotifyUrl;
 extern NSString *const BSGKeyAction;
 extern NSString *const BSGKeyApiKey;
 extern NSString *const BSGKeyApp;
@@ -24,6 +20,7 @@ extern NSString *const BSGKeyBatteryLevel;
 extern NSString *const BSGKeyBreadcrumbs;
 extern NSString *const BSGKeyBundleVersion;
 extern NSString *const BSGKeyCharging;
+extern NSString *const BSGKeyClient;
 extern NSString *const BSGKeyCodeBundleId;
 extern NSString *const BSGKeyConfig;
 extern NSString *const BSGKeyContext;
@@ -40,10 +37,8 @@ extern NSString *const BSGKeyEvents;
 extern NSString *const BSGKeyException;
 extern NSString *const BSGKeyExceptionName;
 extern NSString *const BSGKeyExceptions;
-extern NSString *const BSGKeyExecutableName;
 extern NSString *const BSGKeyExtraRuntimeInfo;
 extern NSString *const BSGKeyFrameAddress;
-extern NSString *const BSGKeyFrameAddrFormat;
 extern NSString *const BSGKeyGroupingHash;
 extern NSString *const BSGKeyId;
 extern NSString *const BSGKeyImageAddress;
@@ -106,5 +101,3 @@ extern NSString *const BSGKeyWarning;
 #define BSGKeyHwCputype "hw.cputype"
 #define BSGKeyHwCpusubtype "hw.cpusubtype"
 #define BSGKeyDefaultMacName "en0"
-
-#endif /* BugsnagKeys_h */

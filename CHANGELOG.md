@@ -1,6 +1,68 @@
 Changelog
 =========
 
+## 6.9.5 (2021-06-09)
+
+### Bug fixes
+
+* Stop app hangs being reported if app is launched in the background.
+  [#1112](https://github.com/bugsnag/bugsnag-cocoa/pull/1112)
+
+* Stop session being reported if app is launched in the background.
+  [#1107](https://github.com/bugsnag/bugsnag-cocoa/pull/1107)
+
+* Fix KSCrash state storage for apps with no CFBundleName.
+  [#1103](https://github.com/bugsnag/bugsnag-cocoa/pull/1103)
+
+## 6.9.4 (2021-06-02)
+
+### Bug fixes
+
+* Improve performance of `notify()`.
+  [#1102](https://github.com/bugsnag/bugsnag-cocoa/pull/1102)
+  [#1104](https://github.com/bugsnag/bugsnag-cocoa/pull/1104)
+  [#1105](https://github.com/bugsnag/bugsnag-cocoa/pull/1105)
+
+* Fix a crash in `-[BugsnagApp deserializeFromJson:]` if main Mach-O image could not be identified, and improve reliability of identification.
+  [#1097](https://github.com/bugsnag/bugsnag-cocoa/issues/1097)
+  [#1101](https://github.com/bugsnag/bugsnag-cocoa/pull/1101)
+
+## 6.9.3 (2021-05-26)
+
+### Bug fixes
+
+* Remove need for `-ObjC` linker flag if linking Bugsnag as a static library.
+  [#1098](https://github.com/bugsnag/bugsnag-cocoa/pull/1098)
+
+## 6.9.2 (2021-05-19)
+
+### Enhancements
+
+* Add a mechanism for reporting errors that occur within the notifier.
+  [#1089](https://github.com/bugsnag/bugsnag-cocoa/pull/1089)
+
+### Bug fixes
+
+* Fix compiler warnings when additional warning flags are enabled.
+  [#1092](https://github.com/bugsnag/bugsnag-cocoa/pull/1092)
+  [#1094](https://github.com/bugsnag/bugsnag-cocoa/pull/1094)
+
+## 6.9.1 (2021-04-28)
+
+### Bug fixes
+
+* Fix a possible deadlock when writing crash reports for uncaught Objective-C exceptions.
+  [#1082](https://github.com/bugsnag/bugsnag-cocoa/pull/1082)
+
+* Fix missing `context` for crash, OOM, and app hang errors.
+  [#1079](https://github.com/bugsnag/bugsnag-cocoa/pull/1079)
+
+* Fix `app` properties in OOMs for apps that override `appType`, `appVersion`, `bundleVersion` or `releaseStage` in their config.
+  [#1078](https://github.com/bugsnag/bugsnag-cocoa/pull/1078)
+
+* `event.threads` will now be empty, rather than containing a single thread, if `sendThreads` dictates that threads should not be sent.
+  [#1077](https://github.com/bugsnag/bugsnag-cocoa/pull/1077)
+
 ## 6.9.0 (2021-04-21)
 
 ### Enhancements

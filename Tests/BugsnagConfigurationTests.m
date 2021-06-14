@@ -284,7 +284,7 @@
 
 - (void)testNotifyEndpoint {
     BugsnagConfiguration *config = [[BugsnagConfiguration alloc] initWithApiKey:DUMMY_APIKEY_32CHAR_1];
-    XCTAssertEqualObjects([NSURL URLWithString:@"https://notify.bugsnag.com/"], config.notifyURL);
+    XCTAssertEqualObjects([NSURL URLWithString:@"https://notify.bugsnag.com"], config.notifyURL);
 
     // Test overriding the notify endpoint (use dummy endpoints to avoid hitting production)
     config.endpoints = [[BugsnagEndpointConfiguration alloc] initWithNotify:@"http://localhost:1234"
@@ -615,7 +615,7 @@ NSString * const kBugsnagUserUserId = @"BugsnagUserUserId";
     XCTAssertEqualObjects(@"macOS", config.appType);
 #endif
 
-    XCTAssertNil(config.appVersion);
+    XCTAssertEqualObjects(config.appVersion, NSBundle.mainBundle.infoDictionary[@"CFBundleShortVersionString"]);
     XCTAssertTrue(config.autoDetectErrors);
     XCTAssertTrue(config.autoTrackSessions);
     XCTAssertEqualObjects(NSBundle.mainBundle.infoDictionary[@"CFBundleVersion"], config.bundleVersion);
