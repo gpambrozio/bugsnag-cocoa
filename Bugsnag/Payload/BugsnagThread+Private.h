@@ -30,6 +30,8 @@ NS_ASSUME_NONNULL_BEGIN
                               depth:(NSUInteger)depth
                           errorType:(nullable NSString *)errorType;
 
++ (nullable instancetype)mainThread;
+
 + (NSMutableArray *)serializeThreads:(nullable NSArray<BugsnagThread *> *)threads;
 
 + (NSMutableArray<BugsnagThread *> *)threadsFromArray:(NSArray *)threads

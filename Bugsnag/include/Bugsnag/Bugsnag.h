@@ -41,7 +41,6 @@
 #import <Bugsnag/BugsnagSession.h>
 #import <Bugsnag/BugsnagStackframe.h>
 #import <Bugsnag/BugsnagThread.h>
-#import <BugSnag/BugsnagThread+Recording.h>
 
 /**
  * Static access to a Bugsnag Client, the easiest way to use Bugsnag in your app.
