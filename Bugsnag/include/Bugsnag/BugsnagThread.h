@@ -41,6 +41,11 @@ typedef NS_OPTIONS(NSUInteger, BSGThreadType) {
 @property (copy, nonnull, nonatomic) NSArray<BugsnagStackframe *> *stacktrace;
 
 /**
+ * Exposed in custom fork
+ */
++ (NSArray<BugsnagThread *> * _Nonnull)allThreads:(BOOL)allThreads callStackReturnAddresses:(NSArray<NSNumber *> * _Nonnull)callStackReturnAddresses;
+
+/**
  * Determines the type of thread based on the originating platform
  * (intended for internal use only)
  */

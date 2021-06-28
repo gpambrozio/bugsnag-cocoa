@@ -20,8 +20,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (instancetype)initWithThread:(NSDictionary *)thread binaryImages:(NSArray *)binaryImages;
 
-+ (NSArray<BugsnagThread *> *)allThreads:(BOOL)allThreads callStackReturnAddresses:(NSArray<NSNumber *> *)callStackReturnAddresses;
-
 + (instancetype)threadFromJson:(NSDictionary *)json;
 
 @property (readonly, nullable, nonatomic) NSString *crashInfoMessage;
